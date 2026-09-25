@@ -1,0 +1,2757 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文档版本管理</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+    --bg: #eef1f4;
+    --surface: #ffffff;
+    --line: #dde3ea;
+    --text: #1f2a33;
+    --muted: #6b7785;
+    --accent: #2f6fed;
+    --accent-soft: #e8f0fe;
+    --ok: #1a7f4b;
+    --warn: #b86e00;
+    --danger: #c0392b;
+    --header: #1e3a5f;
+    --fs: clamp(0.75rem, 0.7rem + 0.2vw, 0.875rem);
+    --fs-sm: clamp(0.6875rem, 0.65rem + 0.15vw, 0.8125rem);
+    --pad: clamp(0.5rem, 0.8vw, 1rem);
+    --radius: 0.5rem;
+}
+body {
+    font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); height: 100vh;
+    display: flex; flex-direction: column; font-size: var(--fs);
+}
+header {
+    background: var(--header); color: white;
+    padding: 0.65rem 1.25rem; display: flex;
+    align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+}
+header .brand { display: flex; align-items: center; gap: 0.65rem; min-width: 0; }
+header h1 { font-size: 1rem; font-weight: 650; letter-spacing: 0.02em; flex-shrink: 0; }
+header .head-badge {
+    font-size: var(--fs-sm); background: rgba(255,255,255,0.14);
+    padding: 0.2em 0.6em; border-radius: 0.3rem; font-weight: 500;
+    color: rgba(255,255,255,0.92); flex-shrink: 0;
+}
+header .btn-refresh {
+    margin-left: 0.15rem;
+    padding: 0.28em 0.75em;
+    font-size: var(--fs-sm);
+    font-weight: 550;
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.28);
+    border-radius: 0.35rem;
+    gap: 0.35em;
+}
+header .btn-refresh:hover:not(:disabled) {
+    background: rgba(255,255,255,0.22);
+    border-color: rgba(255,255,255,0.45);
+    color: #fff;
+}
+header .btn-refresh:active:not(:disabled) {
+    background: rgba(255,255,255,0.28);
+}
+header .btn-refresh .ico-svg { width: 0.85rem; height: 0.85rem; opacity: 0.95; }
+.footer-bar {
+    background: #e8edf2; border-top: 1px solid var(--line);
+    padding: 0.35rem 0.85rem; font-size: var(--fs-sm);
+    color: var(--muted); flex-shrink: 0;
+    display: flex; align-items: center; gap: 0.55rem; flex-wrap: nowrap;
+    min-height: 2rem; overflow: hidden;
+}
+.footer-bar .foot-msg {
+    color: #4a5560; font-weight: 550; flex-shrink: 0;
+    max-width: 8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.footer-bar .foot-sep {
+    width: 1px; height: 0.9rem; background: #cfd6dd; flex-shrink: 0;
+}
+.footer-bar .path-item {
+    display: inline-flex; align-items: center; gap: 0.25rem; min-width: 0; max-width: 9.5rem;
+}
+.footer-bar .path-label { color: var(--muted); flex-shrink: 0; }
+.footer-bar .path-link {
+    color: var(--accent); cursor: pointer;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
+.footer-bar .path-link.empty { color: var(--muted); cursor: default; }
+.footer-bar .stats {
+    color: var(--muted); margin-left: auto; flex-shrink: 0;
+    white-space: nowrap;
+}
+.toolbar {
+    background: var(--surface); padding: 0.5rem 1rem; display: flex;
+    gap: 0.4rem; border-bottom: 1px solid var(--line);
+    flex-wrap: wrap; align-items: center; flex-shrink: 0;
+}
+.toolbar .group-label {
+    font-size: var(--fs-sm); color: var(--muted); margin-right: 0.15rem;
+}
+.toolbar-commit {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    flex-shrink: 0; min-width: 0;
+}
+.commit-status {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.3em 0.7em; border-radius: 999px;
+    font-size: var(--fs-sm); font-weight: 650;
+    white-space: nowrap; flex-shrink: 0;
+    border: 1px solid transparent;
+}
+.commit-status .dot {
+    width: 0.55rem; height: 0.55rem; border-radius: 50%;
+    background: currentColor; flex-shrink: 0;
+}
+.commit-status.is-clean {
+    background: #e6f6ec; color: var(--ok); border-color: #b7e4c7;
+}
+.commit-status.is-dirty {
+    background: #fff4e0; color: var(--warn); border-color: #f0d090;
+    animation: commitPulse 1.2s ease-in-out infinite;
+}
+.commit-status.is-unknown {
+    background: #eef1f4; color: var(--muted); border-color: var(--line);
+}
+@keyframes commitPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(184, 110, 0, 0.35); }
+    50% { box-shadow: 0 0 0 0.35rem rgba(184, 110, 0, 0.12); }
+}
+.pending-summary {
+    font-size: var(--fs-sm); color: var(--muted);
+    max-width: min(22vw, 14rem);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    flex: 0 1 auto; min-width: 0;
+}
+.pending-summary.has-changes { color: var(--warn); font-weight: 550; }
+.pending-summary.clean { color: var(--ok); }
+.pending-summary.hidden { display: none; }
+#toolbarCommitBtn { flex-shrink: 0; }
+.btn {
+    padding: 0.4em 0.85em; border: 1px solid var(--line); border-radius: 0.35rem;
+    cursor: pointer; font-size: var(--fs-sm); font-weight: 500;
+    background: var(--surface); color: var(--text);
+    display: inline-flex; align-items: center; gap: 0.35em;
+    font-family: inherit;
+}
+.btn:hover:not(:disabled) { background: #f5f7fa; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
+.btn-primary:hover:not(:disabled) { background: #245cd4; color: #fff; }
+.btn-success { background: var(--ok); color: white; border-color: var(--ok); }
+.btn-success:hover:not(:disabled) { background: #156b3d; color: #fff; border-color: #156b3d; }
+.btn-danger { background: #fff; color: var(--danger); border-color: #f0c2c2; }
+.btn-danger:hover:not(:disabled) { background: #fff5f5; color: var(--danger); }
+.btn-default { background: #f5f7fa; }
+.btn-default:hover:not(:disabled) { background: #e8edf2; }
+.btn-sm { padding: 0.25em 0.65em; font-size: 0.72rem; }
+.separator { width: 1px; height: 1.4rem; background: var(--line); margin: 0 0.25rem; }
+.main {
+    flex: 1; display: flex; overflow: hidden; padding: 0.65rem; gap: 0;
+    min-height: 0;
+}
+.file-panel {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius) 0 0 var(--radius);
+    display: flex; flex-direction: column; overflow: hidden;
+    width: 36%; min-width: 18vw; max-width: 70%; flex-shrink: 0;
+}
+.splitter {
+    width: 0.35rem; background: transparent; cursor: col-resize;
+    flex-shrink: 0; z-index: 10; position: relative;
+}
+.splitter::after {
+    content: ""; position: absolute; top: 0; bottom: 0; left: 40%;
+    width: 1px; background: var(--line);
+}
+.splitter:hover::after, .splitter.dragging::after { background: var(--accent); width: 2px; left: 30%; }
+.panel-header {
+    padding: 0.5rem 0.75rem; font-weight: 600; font-size: 0.85rem;
+    background: #f7f9fb; border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+    flex-shrink: 0;
+}
+.panel-header .title { flex-shrink: 0; }
+.panel-header .sub {
+    font-weight: 400; color: var(--muted); font-size: var(--fs-sm); margin-left: 0.4rem;
+}
+.panel-header .header-actions { display: flex; gap: 0.25rem; flex-shrink: 0; align-items: center; min-width: 0; }
+.panel-header .header-actions .btn { padding: 0.15em 0.55em; font-size: var(--fs-sm); }
+.file-panel .panel-header .title { flex: 0 0 auto; }
+
+/* 预览栏：左全屏+标题，右工具组 */
+.work-panel > .panel-header {
+    gap: 0.65rem;
+    padding: 0.4rem 0.65rem 0.4rem 0.45rem;
+}
+.preview-head-left {
+    display: flex; align-items: center; gap: 0.35rem;
+    flex: 1; min-width: 0;
+}
+.preview-head-left .title {
+    flex: 1; min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-weight: 650;
+}
+.preview-head-left .sub {
+    display: inline; margin-left: 0.35rem;
+    overflow: hidden; text-overflow: ellipsis;
+}
+.btn-fullscreen {
+    width: 1.55rem; height: 1.55rem; padding: 0; margin: 0;
+    font-size: 0; line-height: 0; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: transparent; color: var(--muted);
+    border: 1px solid transparent; border-radius: 0.35rem;
+    box-shadow: none; cursor: pointer;
+}
+.btn-fullscreen:hover:not(:disabled) {
+    background: #e8edf2; color: var(--accent); border-color: transparent;
+}
+.btn-fullscreen.is-exit {
+    color: var(--danger);
+}
+.btn-fullscreen.is-exit:hover:not(:disabled) {
+    background: #fdecea; color: #a93226;
+}
+.work-panel.fullscreen > .panel-header {
+    background: #1e3a5f; color: #fff;
+    padding: 0.5rem 0.85rem 0.5rem 0.55rem;
+}
+.work-panel.fullscreen .preview-head-left .sub { color: rgba(255,255,255,0.72); }
+.work-panel.fullscreen .btn-fullscreen {
+    color: rgba(255,255,255,0.88);
+}
+.work-panel.fullscreen .btn-fullscreen:hover:not(:disabled),
+.work-panel.fullscreen .btn-fullscreen.is-exit:hover:not(:disabled) {
+    background: rgba(255,255,255,0.14); color: #fff;
+}
+.ico-svg {
+    width: 0.9rem; height: 0.9rem; display: block; flex-shrink: 0;
+    fill: none; stroke: currentColor; stroke-width: 2;
+    stroke-linecap: round; stroke-linejoin: round;
+}
+.btn .ico-svg { margin: 0; }
+.btn-fullscreen .ico-svg { width: 0.95rem; height: 0.95rem; }
+.file-search {
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: 0.35rem;
+    position: relative;
+}
+.file-search input {
+    width: 100%; min-width: 0;
+    padding: 0.28em 1.7em 0.28em 0.55em;
+    border: 1px solid var(--line); border-radius: 0.35rem;
+    font-size: var(--fs-sm); font-family: inherit; color: var(--text);
+    background: #fff; outline: none;
+}
+.file-search input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(47,111,237,0.15); }
+.file-search input::placeholder { color: #9aa5b1; }
+.file-search .clear-btn {
+    position: absolute; right: 0.2rem; top: 50%; transform: translateY(-50%);
+    width: 1.3rem; height: 1.3rem; padding: 0; border: none; background: transparent;
+    color: var(--muted); cursor: pointer; border-radius: 0.25rem;
+    display: none; align-items: center; justify-content: center;
+}
+.file-search .clear-btn.show { display: inline-flex; }
+.file-search .clear-btn:hover { background: #eef1f4; color: var(--text); }
+.file-search .clear-btn .ico-svg { width: 0.75rem; height: 0.75rem; }
+.tree-node.tree-filter-hide { display: none !important; }
+.tree-row.tree-filter-dim .name { opacity: 0.55; }
+.empty-list.filter-empty { color: var(--muted); }
+.file-list { flex: 1; overflow-y: auto; padding: 0.15rem 0; min-height: 0; }
+.tree-header {
+    padding: 0.35rem 0.75rem; display: grid;
+    grid-template-columns: minmax(0, 1fr) 10.5rem 3rem;
+    gap: 0.4rem; font-size: var(--fs-sm); color: var(--muted);
+    border-bottom: 1px solid var(--line); background: #fafbfc; flex-shrink: 0;
+}
+.tree-node { user-select: none; }
+.tree-row {
+    padding: 0.35rem 0.75rem; display: grid;
+    grid-template-columns: minmax(0, 1fr) 10.5rem 3rem;
+    gap: 0.4rem; align-items: center; cursor: pointer;
+    border-bottom: 1px solid #f3f5f7; font-size: var(--fs-sm);
+}
+.tree-row:hover { background: var(--accent-soft); }
+.tree-row.selected { background: #dce8ff; }
+.tree-row.selected.multi { background: #cfe0ff; }
+.tree-row.drag-over { outline: 1px dashed var(--accent); background: #dce8ff; }
+.tree-row .label {
+    display: flex; align-items: center; gap: 0.25rem;
+    min-width: 0; overflow: hidden;
+}
+.tree-row .twist {
+    width: 1rem; height: 1rem; flex-shrink: 0; text-align: center;
+    line-height: 1rem; color: var(--muted); font-size: 0.55rem; cursor: pointer;
+    border-radius: 0.2rem;
+}
+.tree-row .twist:hover { background: #d7e4f8; color: var(--accent); }
+.tree-row .twist.empty { visibility: hidden; pointer-events: none; }
+.tree-children.collapsed { display: none !important; }
+.tree-row .icon { flex-shrink: 0; width: 1rem; text-align: center; font-size: 0.75rem; }
+.tree-row .name {
+    font-weight: 500; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
+}
+.tree-row .meta { color: var(--muted); font-size: var(--fs-sm); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tree-row .status { font-weight: 650; font-size: var(--fs-sm); text-align: center; }
+.tree-row.root-drop {
+    background: #f4f7fa; border-bottom: 1px solid var(--line);
+    font-size: var(--fs-sm); color: var(--muted); padding: 0.35rem 0.75rem;
+}
+.tree-row.root-drop .name { font-weight: 600; color: var(--text); }
+.file-actions {
+    padding: 0.45rem 0.75rem; border-top: 1px solid var(--line);
+    display: flex; gap: 0.4rem; background: #f7f9fb;
+    align-items: center; flex-shrink: 0;
+}
+.file-actions .hint { color: var(--muted); font-size: var(--fs-sm); margin-right: auto; }
+
+/* 右侧：文件预览（版本操作在工具栏，不与预览并列） */
+.work-panel {
+    background: var(--surface); border: 1px solid var(--line);
+    border-left: none; border-radius: 0 var(--radius) var(--radius) 0;
+    display: flex; flex-direction: column;
+    overflow: hidden; flex: 1; min-width: 0;
+}
+.work-panel.fullscreen {
+    position: fixed; inset: 0; z-index: 1600;
+    width: 100% !important; max-width: none; min-width: 0;
+    border: none; border-radius: 0;
+    box-shadow: none;
+}
+/* version-cluster unused */
+
+/* 预览操作：右侧紧凑工具条 */
+.preview-ops {
+    display: none; align-items: center; gap: 0.1rem; flex-shrink: 0;
+    padding: 0.15rem 0.25rem;
+    background: #eef2f6; border: 1px solid var(--line); border-radius: 0.4rem;
+}
+.preview-ops.show { display: inline-flex; }
+.preview-ops .btn {
+    padding: 0; font-size: 0.72rem; line-height: 1;
+    min-height: 0; border-color: transparent; background: transparent;
+}
+.preview-ops .btn.ico-btn {
+    width: 1.4rem; height: 1.4rem; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 0.3rem;
+}
+.preview-ops .btn.ico-btn:hover:not(:disabled) {
+    background: #fff; border-color: transparent;
+}
+.preview-ops .btn.ico-btn.btn-primary {
+    color: #fff; background: var(--accent); border-color: var(--accent);
+}
+.preview-ops .btn.ico-btn.btn-primary:hover:not(:disabled) {
+    background: #245cd4; color: #fff;
+}
+.preview-ops .zoom-label {
+    min-width: 2.5rem; text-align: center; font-size: 0.7rem;
+    color: var(--muted); font-weight: 650; line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+.preview-ops .tb-sep {
+    width: 1px; height: 0.9rem; background: #cfd6dd; margin: 0 0.2rem;
+}
+.work-panel.fullscreen .preview-ops {
+    background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.18);
+}
+.work-panel.fullscreen .preview-ops .zoom-label { color: rgba(255,255,255,0.75); }
+.work-panel.fullscreen .preview-ops .tb-sep { background: rgba(255,255,255,0.25); }
+.work-panel.fullscreen .preview-ops .btn-default {
+    background: transparent; color: #fff; border-color: transparent;
+}
+.work-panel.fullscreen .preview-ops .btn-default:hover:not(:disabled) {
+    background: rgba(255,255,255,0.16);
+}
+.work-panel.fullscreen .preview-ops .btn-primary {
+    background: rgba(255,255,255,0.92); color: var(--header); border-color: transparent;
+}
+.work-panel.fullscreen .preview-ops .btn-primary:hover:not(:disabled) {
+    background: #fff; color: var(--header);
+}
+.preview-viewport {
+    flex: 1; min-height: 0; overflow: auto; background: #fafbfc;
+    position: relative;
+}
+.preview-stage {
+    transform-origin: center top;
+    transition: transform 0.15s ease;
+    min-height: 100%;
+}
+.preview-stage.no-anim { transition: none; }
+.preview-content {
+    /* 内容区：由 viewport 滚动；保留原排版样式挂在 stage 内 */
+    padding: 1.25rem 5%;
+    font-size: 0.9rem; line-height: 1.75; color: var(--text); background: #fafbfc;
+}
+.preview-viewport.pdf-mode { background: #525659; }
+.preview-viewport.pdf-mode .preview-content { padding: 0; height: 100%; background: #525659; }
+.preview-unsupported {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100%; padding: 8vh 5%; text-align: center; gap: 0.65rem;
+}
+.preview-unsupported .big-icon {
+    width: 4.5rem; height: 4.5rem; border-radius: 1rem;
+    background: #eef1f4; color: var(--muted);
+    display: flex; align-items: center; justify-content: center; font-size: 2rem;
+    margin-bottom: 0.35rem;
+}
+.preview-unsupported .fname {
+    font-size: 1rem; font-weight: 650; color: var(--text);
+    word-break: break-word; max-width: min(80%, 28rem);
+}
+.preview-unsupported .meta {
+    font-size: var(--fs-sm); color: var(--muted);
+}
+.preview-unsupported .hint {
+    font-size: 0.85rem; color: #8a96a3; max-width: min(80%, 26rem); line-height: 1.55;
+    margin: 0.35rem 0 0.75rem;
+}
+.preview-stage .preview-image {
+    display: block; margin: 1.5rem auto; max-width: 100%;
+    box-shadow: 0 0.15rem 0.75rem rgba(0,0,0,0.08);
+}
+.preview-content h1 { font-size: 1.4rem; font-weight: 700; margin: 0.8em 0 0.4em; }
+.preview-content h2 { font-size: 1.2rem; font-weight: 700; margin: 0.7em 0 0.35em; }
+.preview-content h3 { font-size: 1.05rem; font-weight: 600; margin: 0.6em 0 0.35em; }
+.preview-content h4, .preview-content h5, .preview-content h6 { font-size: 1rem; font-weight: 600; margin: 0.5em 0 0.25em; }
+.preview-content p { margin: 0 0 0.5em; }
+.preview-content ul, .preview-content ol { margin: 0.25em 0 0.5em; padding-left: 1.8em; }
+.preview-content table { border-collapse: collapse; margin: 0.5em 0; width: 100%; }
+.preview-content td, .preview-content th { border: 1px solid #ccc; padding: 0.4em 0.65em; font-size: 0.85rem; }
+.preview-content th { background: #f0f0f0; }
+.preview-content img { max-width: 100%; }
+.preview-content a { color: var(--accent); }
+.preview-content pre { white-space: pre-wrap; font-family: inherit; margin: 0; }
+.preview-empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100%; color: var(--muted); font-size: 0.85rem; gap: 0.35rem; text-align: center; padding: 5%;
+}
+.preview-empty .flow {
+    font-size: var(--fs-sm); color: #8a96a3; max-width: min(36vw, 18rem); line-height: 1.5;
+}
+.preview-content.pdf-mode { padding: 0; overflow: hidden; background: #525659; }
+.preview-loading {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; height: 40vh; color: var(--muted); gap: 0.75rem;
+}
+.preview-loading .spinner {
+    width: 2rem; height: 2rem; border: 0.2rem solid #ddd;
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- 弹窗（vw / vh） ---- */
+.modal-overlay {
+    position: fixed; inset: 0; background: rgba(20,30,40,0.35);
+    display: none; align-items: center; justify-content: center; z-index: 1000;
+    padding: 3vh 3vw;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+    background: white; border-radius: var(--radius); padding: 1.25rem 1.4rem;
+    width: min(36vw, 28rem); max-width: 94vw; max-height: 90vh;
+    box-shadow: 0 0.75rem 2.5rem rgba(0,0,0,0.18);
+    display: flex; flex-direction: column; min-height: 0;
+}
+.modal h2 { margin-bottom: 0.75rem; font-size: 1rem; flex-shrink: 0; }
+.modal input, .modal textarea, .modal select {
+    width: 100%; padding: 0.55em 0.75em; border: 1px solid var(--line);
+    border-radius: 0.4rem; font-size: 0.85rem; margin-bottom: 0.75rem; font-family: inherit;
+}
+.modal textarea { height: 12vh; min-height: 4rem; resize: vertical; }
+.modal .actions {
+    display: flex; justify-content: flex-end; align-items: center; gap: 0.5rem;
+    flex-shrink: 0; flex-wrap: wrap;
+}
+.modal.modal-detail {
+    width: min(42vw, 32rem);
+    padding: 0;
+    overflow: hidden;
+}
+.modal.modal-detail .detail-head {
+    display: flex; align-items: flex-start; gap: 0.85rem;
+    padding: 1.15rem 1.25rem 1rem;
+    background: linear-gradient(180deg, #f4f7fb 0%, #fff 100%);
+    border-bottom: 1px solid var(--line);
+}
+.modal.modal-detail .detail-icon {
+    width: 2.75rem; height: 2.75rem; flex-shrink: 0;
+    border-radius: 0.55rem;
+    background: var(--accent-soft); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.35rem;
+}
+.modal.modal-detail .detail-icon.is-dir {
+    background: #eef6ef; color: var(--ok);
+}
+.modal.modal-detail .detail-head-main { flex: 1; min-width: 0; }
+.modal.modal-detail .detail-title {
+    font-size: 1rem; font-weight: 650; line-height: 1.35;
+    word-break: break-word; margin-bottom: 0.45rem;
+}
+.modal.modal-detail .detail-badges {
+    display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center;
+}
+.modal.modal-detail .detail-badge {
+    display: inline-flex; align-items: center;
+    font-size: 0.7rem; font-weight: 650;
+    padding: 0.15em 0.55em; border-radius: 999px;
+    background: #eef1f4; color: var(--muted);
+}
+.modal.modal-detail .detail-badge.status-ok { background: #e6f6ec; color: var(--ok); }
+.modal.modal-detail .detail-badge.status-mod { background: #fff4e0; color: var(--warn); }
+.modal.modal-detail .detail-badge.status-new { background: #e8f1ff; color: #0066cc; }
+.modal.modal-detail .detail-badge.status-ign { background: #f0f0f0; color: #888; }
+.modal.modal-detail .detail-body { padding: 1rem 1.25rem; }
+.modal.modal-detail .detail-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;
+}
+.modal.modal-detail .detail-card {
+    background: #f7f9fb; border: 1px solid var(--line);
+    border-radius: 0.45rem; padding: 0.65rem 0.75rem;
+}
+.modal.modal-detail .detail-card.span-2 { grid-column: 1 / -1; }
+.modal.modal-detail .detail-card .k {
+    font-size: 0.7rem; color: var(--muted); margin-bottom: 0.25rem; font-weight: 550;
+}
+.modal.modal-detail .detail-card .v {
+    font-size: 0.88rem; color: var(--text); font-weight: 550;
+    word-break: break-word; line-height: 1.4;
+}
+.modal.modal-detail .detail-card .v.path {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.78rem; font-weight: 500;
+    color: #3a4a5a; background: #fff;
+    border: 1px dashed var(--line); border-radius: 0.3rem;
+    padding: 0.4rem 0.5rem; display: block;
+}
+.modal.modal-detail .detail-foot {
+    padding: 0.75rem 1.25rem 1rem;
+    border-top: 1px solid var(--line);
+    display: flex; justify-content: flex-end; gap: 0.5rem;
+    background: #fafbfc;
+}
+.modal.modal-history {
+    width: min(78vw, 64rem); height: min(78vh, 52rem);
+    padding: 0; overflow: hidden;
+}
+.modal.modal-history .hist-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.9rem 1.2rem; border-bottom: 1px solid var(--line); flex-shrink: 0;
+}
+.modal.modal-history .hist-head h2 { margin: 0; }
+.modal.modal-history .hist-body {
+    flex: 1; display: flex; min-height: 0; overflow: hidden;
+}
+.modal.modal-history .hist-list {
+    width: 42%; min-width: 28%; max-width: 50%;
+    border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; min-height: 0;
+}
+.modal.modal-history .hist-list-scroll {
+    flex: 1; overflow-y: auto; min-height: 0;
+}
+.modal.modal-history .hist-detail {
+    flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0;
+    background: #fafbfc;
+}
+.modal.modal-history .hist-foot {
+    padding: 0.65rem 1.2rem; border-top: 1px solid var(--line);
+    display: flex; justify-content: flex-end; flex-shrink: 0;
+}
+
+.commit-summary { color: var(--muted); font-size: var(--fs-sm); margin-bottom: 0.5rem; }
+.change-box {
+    max-height: 28vh; overflow-y: auto;
+    border: 1px solid var(--line); border-radius: 0.4rem;
+    padding: 0.65rem 0.75rem; background: #fafbfc; font-size: var(--fs-sm); margin-bottom: 0.75rem;
+}
+.change-box .chg-line { padding: 0.1em 0; font-family: Consolas, "Courier New", monospace; }
+.commit-tip { font-size: var(--fs-sm); color: var(--muted); margin-right: auto; }
+
+/* 历史列表行 */
+.hist-row {
+    display: grid;
+    grid-template-columns: 3.2rem 1fr auto;
+    gap: 0.5rem; align-items: center;
+    padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line);
+    cursor: pointer; background: var(--surface);
+}
+.hist-row:hover { background: var(--accent-soft); }
+.hist-row.active { background: #dce8ff; box-shadow: inset 0.2rem 0 0 var(--accent); }
+.hist-row .rev {
+    font-weight: 700; color: var(--accent); font-size: 0.9rem;
+}
+.hist-row .meta { min-width: 0; }
+.hist-row .note {
+    font-size: var(--fs-sm); font-weight: 550;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.hist-row .time { font-size: 0.7rem; color: var(--muted); margin-top: 0.15rem; }
+.hist-row .chips { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.3rem; }
+.chip {
+    display: inline-block; font-size: 0.65rem; font-weight: 650;
+    padding: 0.1em 0.45em; border-radius: 0.25rem; line-height: 1.4;
+}
+.chip-a { background: #e8f1ff; color: #0066cc; }
+.chip-m { background: #fff4e0; color: var(--warn); }
+.chip-d { background: #fdecea; color: var(--danger); }
+.hist-row .ops { flex-shrink: 0; }
+.hist-row .ops .btn { pointer-events: auto; }
+
+/* 历史详情面板 */
+.hist-detail-empty {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    color: var(--muted); font-size: 0.85rem; padding: 5%; text-align: center;
+}
+.hist-detail-body {
+    flex: 1; overflow-y: auto; padding: 1rem 1.2rem; min-height: 0;
+}
+.hist-detail-title {
+    display: flex; align-items: baseline; gap: 0.65rem; flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+}
+.hist-detail-title .rev-big {
+    font-size: 1.35rem; font-weight: 700; color: var(--accent);
+}
+.hist-detail-title .when { color: var(--muted); font-size: var(--fs-sm); }
+.hist-detail-note {
+    font-size: 0.95rem; line-height: 1.55; margin-bottom: 0.9rem;
+    padding: 0.75rem 0.9rem; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 0.4rem;
+}
+.hist-detail-note.empty { color: var(--muted); font-style: italic; }
+.hist-section-label {
+    font-size: var(--fs-sm); font-weight: 650; color: var(--muted);
+    margin: 0.85rem 0 0.45rem; display: flex; align-items: center; gap: 0.5rem;
+}
+.hist-section-label .chips { margin: 0; }
+.hist-file-group { margin-bottom: 0.75rem; }
+.hist-file-group .group-title {
+    font-size: 0.72rem; font-weight: 650; margin-bottom: 0.3rem;
+}
+.hist-file-group .group-title.a { color: #0066cc; }
+.hist-file-group .group-title.m { color: var(--warn); }
+.hist-file-group .group-title.d { color: var(--danger); }
+.hist-file-list {
+    border: 1px solid var(--line); border-radius: 0.4rem;
+    background: var(--surface); max-height: 28vh; overflow-y: auto;
+}
+.hist-file-list .chg-line {
+    padding: 0.35rem 0.75rem; font-family: Consolas, "Courier New", monospace;
+    font-size: var(--fs-sm); border-bottom: 1px solid #f3f5f7;
+    display: flex; align-items: center; gap: 0.5rem;
+}
+.hist-file-list .chg-line:last-child { border-bottom: none; }
+.hist-file-list .chg-path {
+    flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.hist-file-list .chg-acts {
+    display: flex; gap: 0.25rem; flex-shrink: 0;
+}
+.hist-file-list .chg-acts .btn { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+
+/* 内容对比弹窗 */
+.modal.modal-diff {
+    width: min(82vw, 56rem); height: min(82vh, 48rem); padding: 0; overflow: hidden;
+}
+.modal.modal-diff .diff-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+    padding: 0.85rem 1.1rem; border-bottom: 1px solid var(--line); flex-shrink: 0;
+}
+.modal.modal-diff .diff-head h2 { margin: 0; font-size: 0.95rem; }
+.modal.modal-diff .diff-meta {
+    padding: 0.55rem 1.1rem; font-size: var(--fs-sm); color: var(--muted);
+    border-bottom: 1px solid var(--line); flex-shrink: 0;
+    display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;
+}
+.modal.modal-diff .diff-body {
+    flex: 1; overflow: auto; min-height: 0; background: #1e1e1e; color: #d4d4d4;
+    font-family: Consolas, "Courier New", monospace; font-size: 0.78rem; line-height: 1.45;
+    padding: 0.75rem 0;
+}
+.modal.modal-diff .diff-foot {
+    padding: 0.55rem 1.1rem; border-top: 1px solid var(--line);
+    display: flex; justify-content: flex-end; gap: 0.5rem; flex-shrink: 0;
+}
+.diff-line { padding: 0 1rem; white-space: pre-wrap; word-break: break-all; }
+.diff-line.dh { color: #9cdcfe; background: #252526; }
+.diff-line.add { background: #1e3a2f; color: #b5f4c6; }
+.diff-line.del { background: #3f1d1d; color: #f5b5b5; }
+.diff-line.ctx { color: #cccccc; }
+.diff-empty {
+    color: var(--muted); text-align: center; padding: 12vh 5%;
+    background: #fafbfc; font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+}
+.hist-detail-actions {
+    display: flex; gap: 0.5rem; flex-wrap: wrap;
+    margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--line);
+}
+.chg-a { color: #0066cc; }
+.chg-m { color: var(--warn); }
+.chg-d { color: var(--danger); }
+.change-empty { color: var(--muted); text-align: center; padding: 8vh 5%; }
+
+.status-bar {
+    /* legacy alias kept if referenced; real footer is .footer-bar */
+    display: none;
+}
+.empty-list { padding: 8vh 5%; text-align: center; color: var(--muted); font-size: 0.85rem; }
+.ctx-menu {
+    position: fixed; background: white; border: 1px solid var(--line);
+    border-radius: 0.4rem; box-shadow: 0 0.4rem 1.25rem rgba(0,0,0,0.12);
+    z-index: 2500; min-width: 10rem; padding: 0.25rem 0; display: none;
+}
+.ctx-menu.show { display: block; }
+.ctx-menu button {
+    display: block; width: 100%; text-align: left;
+    padding: 0.55rem 0.9rem; border: none; background: none;
+    font-size: var(--fs-sm); cursor: pointer; font-family: inherit;
+}
+.ctx-menu button:hover { background: var(--accent-soft); }
+.ctx-menu .sep { height: 1px; background: var(--line); margin: 0.25rem 0; }
+.toast {
+    position: fixed; bottom: 5vh; left: 50%; transform: translateX(-50%);
+    background: #2c3a47; color: white; padding: 0.65rem 1.25rem;
+    border-radius: 0.4rem; font-size: var(--fs-sm); z-index: 2000;
+    opacity: 0; transition: opacity 0.3s; max-width: 80vw;
+}
+.toast.show { opacity: 1; }
+.toast.success { background: var(--ok); }
+.toast.error { background: var(--danger); }
+.global-loading {
+    position: fixed; inset: 0; background: rgba(255,255,255,0.5);
+    display: none; align-items: center; justify-content: center; z-index: 3000;
+    flex-direction: column; gap: 0.75rem;
+}
+.global-loading.show { display: flex; }
+.global-loading .spinner {
+    width: 2.25rem; height: 2.25rem; border: 0.2rem solid #ddd;
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+.global-loading .msg {
+    font-size: 0.85rem; color: #555; background: rgba(255,255,255,0.95);
+    padding: 0.4rem 0.9rem; border-radius: 1rem;
+    box-shadow: 0 0.15rem 0.6rem rgba(0,0,0,0.06);
+}
+.preview-content code {
+    background: #f0f0f0; padding: 0.15em 0.4em; border-radius: 0.25rem;
+    font-family: Consolas, "Courier New", monospace; font-size: 0.85em; color: #c7254e;
+}
+.preview-content pre {
+    background: #f6f8fa; padding: 0.75rem 1rem; border-radius: 0.4rem;
+    border: 1px solid #e1e4e8; overflow-x: auto; margin: 0.5em 0;
+}
+.preview-content pre code { background: none; padding: 0; color: #333; display: block; white-space: pre; }
+.preview-content blockquote {
+    border-left: 0.2rem solid var(--accent); padding: 0.25em 0.9em;
+    margin: 0.5em 0; color: #666; background: #f9f9f9;
+}
+.preview-content .docx-wrapper {
+    background: #e8e8e8; padding: 1rem; min-height: 100%; overflow-y: auto;
+}
+.preview-content .docx-wrapper > .docx {
+    margin: 0 auto 1rem; box-shadow: 0 0.15rem 0.5rem rgba(0,0,0,0.12); background: white;
+}
+@media (max-width: 720px) {
+    .modal.modal-history { width: 94vw; height: 88vh; }
+    .modal.modal-history .hist-body { flex-direction: column; }
+    .modal.modal-history .hist-list {
+        width: 100%; max-width: none; height: 38%;
+        border-right: none; border-bottom: 1px solid var(--line);
+    }
+}
+</style>
+<script src="/static/jszip.min.js"></script>
+<script src="/static/marked.min.js"></script>
+<script src="/static/docx-preview.min.js"></script>
+</head>
+<body>
+<header>
+    <div class="brand">
+        <h1>DocVM</h1>
+        <span class="head-badge" id="headBadge">HEAD r0</span>
+        <button type="button" class="btn btn-refresh" onclick="refresh()" title="刷新工作副本状态">
+            <svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+            刷新
+        </button>
+    </div>
+</header>
+
+<div class="toolbar">
+    <button class="btn btn-primary" onclick="uploadToRoot()">上传</button>
+    <input type="file" id="fileInput" multiple style="display:none" onchange="uploadFiles(this)">
+    <button class="btn btn-default" onclick="showMkdirDialog()">新建文件夹</button>
+    <button class="btn btn-default" onclick="showMoveDialog()">移动</button>
+    <button class="btn btn-danger" onclick="deleteSelected()">删除</button>
+    <div class="separator"></div>
+    <button class="btn btn-default" onclick="showHistoryModal()">历史</button>
+    <div class="toolbar-commit">
+        <button class="btn btn-success" id="toolbarCommitBtn" onclick="showCommitModal()" disabled>提交</button>
+        <span class="commit-status is-clean" id="commitStatusBadge" title="版本状态">
+            <span class="dot"></span>
+            <span id="commitStatusText">已同步</span>
+        </span>
+        <span class="pending-summary clean" id="pendingToolbarSummary" title="待提交统计">无可提交变更</span>
+    </div>
+</div>
+
+<div class="main">
+    <div class="file-panel" id="filePanel">
+        <div class="panel-header">
+            <span class="title">工作区</span>
+            <div class="file-search">
+                <input type="search" id="fileSearchInput" placeholder="搜索文件…" autocomplete="off" spellcheck="false">
+                <button type="button" class="clear-btn" id="fileSearchClear" title="清除" aria-label="清除搜索">
+                    <svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+            </div>
+        </div>
+        <div class="tree-header"><span>名称</span><span style="text-align:right">时间</span><span style="text-align:center">状态</span></div>
+        <div class="tree-row root-drop" id="rootDrop" data-path="" data-type="dir" title="根目录">
+            <div class="label"><span class="twist"></span><span class="icon">📂</span><span class="name">/ 根目录</span></div>
+            <div class="meta"></div><div class="status"></div>
+        </div>
+        <div class="file-list" id="fileList">
+            <div class="empty-list">暂无文件，点击「上传」添加到工作副本</div>
+        </div>
+        <div class="file-actions">
+            <span class="hint" id="selHint">选文件预览 · 有改动后点「提交」</span>
+        </div>
+    </div>
+    <div class="splitter" id="splitter"></div>
+    <div class="work-panel" id="workPanel">
+        <div class="panel-header">
+            <div class="preview-head-left">
+                <button type="button" class="btn btn-fullscreen" id="previewFsBtn" onclick="togglePreviewFullscreen()" title="全屏预览 (Esc 退出)" aria-label="全屏预览">
+                    <svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+                </button>
+                <span class="title">预览<span class="sub" id="previewSub">选中文件后显示</span></span>
+            </div>
+            <span class="header-actions">
+                <span class="preview-ops" id="previewToolbar">
+                    <button type="button" class="btn btn-default ico-btn" onclick="previewZoom(-0.1)" title="缩小" aria-label="缩小">
+                        <svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                    </button>
+                    <span class="zoom-label" id="previewZoomLabel">100%</span>
+                    <button type="button" class="btn btn-default ico-btn" onclick="previewZoom(0.1)" title="放大" aria-label="放大">
+                        <svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                    </button>
+                    <button type="button" class="btn btn-default ico-btn" onclick="previewZoomReset()" title="重置缩放" aria-label="重置缩放">
+                        <svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
+                    </button>
+                    <span class="tb-sep"></span>
+                    <button type="button" class="btn btn-default ico-btn" onclick="previewRotate(-90)" title="逆时针旋转" aria-label="逆时针旋转">
+                        <svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                    </button>
+                    <button type="button" class="btn btn-default ico-btn" onclick="previewRotate(90)" title="顺时针旋转" aria-label="顺时针旋转">
+                        <svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+                    </button>
+                    <span class="tb-sep"></span>
+                    <button type="button" class="btn btn-primary ico-btn" id="previewDownloadBtn" onclick="downloadPreviewFile()" title="下载当前文件" aria-label="下载">
+                        <svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    </button>
+                </span>
+            </span>
+        </div>
+        <div class="preview-viewport" id="previewViewport">
+            <div class="preview-stage" id="previewStage">
+                <div class="preview-content" id="previewContent">
+                    <div class="preview-empty">
+                        <div>在左侧选择文件预览</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="footer-bar" id="footerBar">
+    <span class="foot-msg" id="statusBar">就绪</span>
+    <span class="foot-sep"></span>
+    <div class="path-item">
+        <span class="path-label">工作副本</span>
+        <a class="path-link empty" id="workDirLink" title="点击打开工作副本">—</a>
+    </div>
+    <div class="path-item">
+        <span class="path-label">变更包</span>
+        <a class="path-link empty" id="backupDirLink" title="每次提交的变更文件小包">—</a>
+    </div>
+    <div class="path-item">
+        <span class="path-label">忽略</span>
+        <a class="path-link empty" id="ignoreLink" title="大文件/工具写入 ignore.txt">ignore.txt</a>
+    </div>
+    <span class="stats" id="statsInfo"></span>
+</div>
+
+<div class="modal-overlay" id="nameModal">
+    <div class="modal">
+        <h2 id="nameModalTitle">输入名称</h2>
+        <input type="text" id="nameModalInput" placeholder="请输入名称">
+        <div class="actions">
+            <button class="btn btn-default" onclick="closeModal('nameModal')">取消</button>
+            <button class="btn btn-primary" onclick="confirmNameModal()">确定</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="moveModal">
+    <div class="modal">
+        <h2>移动到...</h2>
+        <p style="color:#6b7785;font-size:12px;margin-bottom:10px" id="moveSrcLabel"></p>
+        <select id="moveDestSelect" style="width:100%;padding:8px 12px;border:1px solid #dde3ea;border-radius:6px;font-size:13px;margin-bottom:12px"></select>
+        <div class="actions">
+            <button class="btn btn-default" onclick="closeModal('moveModal')">取消</button>
+            <button class="btn btn-primary" onclick="confirmMove()">移动</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="commitModal">
+    <div class="modal modal-commit">
+        <h2>提交修订</h2>
+        <div class="commit-summary" id="pendingSummary">正在检查工作副本变更…</div>
+        <div class="change-box" id="pendingChanges"></div>
+        <textarea id="noteInput" placeholder="提交说明：例如「修订第三章」「上传覆盖合同稿」"></textarea>
+        <div class="actions" style="align-items:center">
+            <span class="commit-tip">仅备份本次 A/M 变更，未改动文件不重复拷贝</span>
+            <button class="btn btn-default" onclick="closeModal('commitModal')">取消</button>
+            <button class="btn btn-success" id="saveVersionBtn" onclick="doSaveVersion()" disabled>确认提交</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="historyModal">
+    <div class="modal modal-history">
+        <div class="hist-head">
+            <h2>修订历史</h2>
+            <button class="btn btn-default" onclick="closeModal('historyModal')">关闭</button>
+        </div>
+        <div class="hist-body">
+            <div class="hist-list">
+                <div class="hist-list-scroll" id="historyList"></div>
+            </div>
+            <div class="hist-detail" id="historyDetail">
+                <div class="hist-detail-empty">选择左侧一条修订查看详情</div>
+            </div>
+        </div>
+        <div class="hist-foot">
+            <span style="margin-right:auto;font-size:var(--fs-sm);color:var(--muted)" id="historyCount"></span>
+            <button class="btn btn-default" onclick="closeModal('historyModal')">关闭</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="diffModal">
+    <div class="modal modal-diff">
+        <div class="diff-head">
+            <h2 id="diffTitle">内容对比</h2>
+            <button class="btn btn-default" onclick="closeModal('diffModal')">关闭</button>
+        </div>
+        <div class="diff-meta" id="diffMeta"></div>
+        <div class="diff-body" id="diffBody"></div>
+        <div class="diff-foot">
+            <button class="btn btn-default" id="diffDlFrom" style="display:none">下载修改前</button>
+            <button class="btn btn-default" id="diffDlTo" style="display:none">下载修改后</button>
+            <button class="btn btn-default" onclick="closeModal('diffModal')">关闭</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="detailModal">
+    <div class="modal modal-detail">
+        <div class="detail-head">
+            <div class="detail-icon" id="detailIcon">📄</div>
+            <div class="detail-head-main">
+                <div class="detail-title" id="detailTitle">—</div>
+                <div class="detail-badges" id="detailBadges"></div>
+            </div>
+        </div>
+        <div class="detail-body" id="detailBody"></div>
+        <div class="detail-foot">
+            <button class="btn btn-default" onclick="closeModal('detailModal')">关闭</button>
+        </div>
+    </div>
+</div>
+
+<div class="ctx-menu" id="ctxMenu">
+    <button data-act="detail">详情</button>
+    <div class="sep" data-act-sep="0"></div>
+    <button data-act="mkdir">新建子文件夹</button>
+    <button data-act="upload">上传到此处</button>
+    <button data-act="reveal">在资源管理器中打开</button>
+    <div class="sep" data-act-sep="1"></div>
+    <button data-act="rename">重命名</button>
+    <button data-act="move">移动到...</button>
+    <div class="sep" data-act-sep="2"></div>
+    <button data-act="delete" style="color:#c0392b">删除</button>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="global-loading" id="globalLoading">
+    <div class="spinner"></div>
+    <div class="msg" id="globalLoadingMsg">处理中...</div>
+</div>
+
+<script>
+let selectedMap = {};
+let lastClickedPath = null;
+let expandedDirs = {};
+let nameModalMode = null;
+let nameModalBase = '';
+let dragSrcPath = null;
+let uploadTargetDir = '';
+let loadingCount = 0;
+let workspaceReady = false;
+let pendingDirtyCount = 0;
+let lastPending = null;
+let historyCache = [];
+let selectedHistoryVer = null;
+
+function esc(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;');
+}
+
+function selectedPaths() {
+    return Object.keys(selectedMap);
+}
+
+function primarySelection() {
+    const paths = selectedPaths();
+    if (!paths.length) return { path: null, type: null };
+    const p = (lastClickedPath != null && selectedMap[lastClickedPath] != null)
+        ? lastClickedPath : paths[paths.length - 1];
+    return { path: p, type: selectedMap[p] };
+}
+
+function showLoading(msg) {
+    loadingCount++;
+    const el = document.getElementById('globalLoading');
+    document.getElementById('globalLoadingMsg').textContent = msg || '处理中...';
+    el.classList.add('show');
+    document.getElementById('statusBar').textContent = msg || '处理中...';
+}
+
+function hideLoading() {
+    loadingCount = Math.max(0, loadingCount - 1);
+    if (loadingCount === 0) {
+        document.getElementById('globalLoading').classList.remove('show');
+    }
+}
+
+function api(path, method, body, cb, errCb) {
+    fetch('/api/' + path, {
+        method: method,
+        headers: method === 'POST' ? {'Content-Type':'application/json'} : {},
+        body: method === 'POST' ? JSON.stringify(body) : null
+    })
+    .then(r => r.json())
+    .then(d => cb(d))
+    .catch(e => {
+        console.error(e);
+        if (errCb) errCb(e);
+        else showToast('请求失败: ' + e, 'error');
+    });
+}
+
+function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + (type || '');
+    setTimeout(() => t.className = 'toast', 3000);
+    document.getElementById('statusBar').textContent = msg;
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+function setPathLink(el, path, target) {
+    if (!path) {
+        el.textContent = '—';
+        el.classList.add('empty');
+        el.onclick = null;
+        return;
+    }
+    // 底部栏只显示末级目录名，完整路径放 title
+    const norm = String(path).replace(/\\/g, '/');
+    const parts = norm.split('/').filter(Boolean);
+    const short = parts.length ? parts[parts.length - 1] : norm;
+    el.textContent = short;
+    el.title = '点击打开: ' + path;
+    el.classList.remove('empty');
+    el.onclick = function(e) {
+        e.preventDefault();
+        openExplorer(target);
+    };
+}
+
+function setStatusMsg(msg) {
+    const el = document.getElementById('statusBar');
+    if (el) el.textContent = msg || '';
+    if (el) el.title = msg || '';
+}
+
+function openExplorer(target, rel) {
+    showLoading('正在打开资源管理器...');
+    api('open_explorer', 'POST', {target: target, path: rel || ''}, d => {
+        hideLoading();
+        if (!d.ok) showToast(d.msg, 'error');
+        else document.getElementById('statusBar').textContent = d.msg;
+    }, () => { hideLoading(); showToast('打开失败', 'error'); });
+}
+
+function refresh() {
+    showLoading('正在刷新...');
+    api('workspace', 'GET', null, d => {
+        if (!d.selected) {
+            workspaceReady = false;
+            window.currentDir = null;
+            window.backupDir = null;
+            setPathLink(document.getElementById('workDirLink'), null, 'work');
+            setPathLink(document.getElementById('backupDirLink'), null, 'backup');
+            setPathLink(document.getElementById('ignoreLink'), null, 'ignore');
+            document.getElementById('statsInfo').textContent = '';
+            document.getElementById('fileList').innerHTML = '<div class="empty-list">工作区未就绪</div>';
+            applyPendingToToolbar(null);
+            hideLoading();
+            return;
+        }
+        workspaceReady = true;
+        window.currentDir = d.workspace_dir || d.dir;
+        window.backupDir = d.backup_dir;
+        setPathLink(document.getElementById('workDirLink'), d.workspace_dir || d.dir, 'work');
+        setPathLink(document.getElementById('backupDirLink'), d.backup_dir, 'backup');
+        setPathLink(document.getElementById('ignoreLink'), d.ignore_file || 'ignore.txt', 'ignore');
+        const head = d.head_revision != null ? d.head_revision : 0;
+        document.getElementById('headBadge').textContent = 'HEAD r' + head;
+        document.getElementById('statsInfo').textContent =
+            '跟踪 ' + d.total + ' · 正常 ' + d.committed + ' · 修改 ' + d.modified + ' · 新增 ' + d.new;
+        loadFiles(() => {
+            hideLoading();
+            document.getElementById('statusBar').textContent = '就绪';
+            reloadPreviewIfNeeded();
+            refreshVersionToolbar();
+        });
+    }, () => { hideLoading(); showToast('刷新失败', 'error'); });
+}
+
+function reloadPreviewIfNeeded() {
+    const sel = primarySelection();
+    if (sel.type === 'file' && sel.path) previewFile(sel.path);
+}
+
+/** 静默刷新：只更新状态栏/树状态，绝不重载预览（避免闪烁） */
+let quietBusy = false;
+let lastQuietAt = 0;
+
+function refreshQuiet() {
+    if (!workspaceReady || loadingCount > 0 || quietBusy) return;
+    const now = Date.now();
+    if (now - lastQuietAt < 2500) return; // 防抖：focus + visibility 常连发
+    lastQuietAt = now;
+    quietBusy = true;
+
+    api('workspace', 'GET', null, d => {
+        if (!d.selected) { quietBusy = false; return; }
+        const head = d.head_revision != null ? d.head_revision : 0;
+        document.getElementById('headBadge').textContent = 'HEAD r' + head;
+        document.getElementById('statsInfo').textContent =
+            '跟踪 ' + d.total + ' · 正常 ' + d.committed + ' · 修改 ' + d.modified + ' · 新增 ' + d.new;
+        refreshVersionToolbar();
+        api('files', 'GET', null, tree => {
+            patchTreeStatuses(tree || []);
+            quietBusy = false;
+        }, () => { quietBusy = false; });
+    }, () => { quietBusy = false; });
+}
+
+function walkTreeNodes(nodes, fn) {
+    (nodes || []).forEach(n => {
+        fn(n);
+        if (n.type === 'dir' && n.children) walkTreeNodes(n.children, fn);
+    });
+}
+
+/** 就地更新文件状态/大小，不重建 DOM、不丢选中与展开 */
+function patchTreeStatuses(tree) {
+    const byPath = {};
+    walkTreeNodes(tree, n => { byPath[n.path] = n; });
+    const rows = document.querySelectorAll('#fileList .tree-row');
+    let structureChanged = false;
+    const seen = {};
+    rows.forEach(row => {
+        const p = row.dataset.path;
+        seen[p] = true;
+        const n = byPath[p];
+        if (!n) {
+            structureChanged = true;
+            return;
+        }
+        if (row.dataset.type !== n.type) {
+            structureChanged = true;
+            return;
+        }
+        if (n.type === 'file') {
+            const meta = row.querySelector('.meta');
+            const st = row.querySelector('.status');
+            if (meta) {
+                meta.textContent = n.time || '';
+                meta.title = n.time || '';
+            }
+            if (st) {
+                st.textContent = n.status || '';
+                st.style.color = n.color || '#888';
+            }
+            row.dataset.name = n.name || '';
+            row.dataset.size = n.size || '';
+            row.dataset.time = n.time || '';
+            row.dataset.status = n.status || '';
+        }
+    });
+    walkTreeNodes(tree, n => {
+        if (!seen[n.path]) structureChanged = true;
+    });
+    // 有增删/移动时才整树重建（仍不重载预览）
+    if (structureChanged) {
+        const list = document.getElementById('fileList');
+        if (!tree || tree.length === 0) {
+            list.innerHTML = '<div class="empty-list">暂无文件，请上传到根目录或新建文件夹</div>';
+        } else {
+            list.innerHTML = renderTree(tree, 0);
+            bindTreeEvents(list);
+            applyFileFilter();
+        }
+        Object.keys(selectedMap).forEach(p => {
+            if (p === '') return;
+            const found = Array.from(document.querySelectorAll('.tree-row')).some(el => el.dataset.path === p);
+            if (!found) delete selectedMap[p];
+        });
+        applySelectionHighlight();
+    }
+}
+
+function applyPendingToToolbar(d) {
+    const btn = document.getElementById('toolbarCommitBtn');
+    const sum = document.getElementById('pendingToolbarSummary');
+    const badge = document.getElementById('commitStatusBadge');
+    const badgeText = document.getElementById('commitStatusText');
+    if (!btn || !sum) return;
+
+    function setCleanBadge() {
+        if (badge) {
+            badge.className = 'commit-status is-clean';
+            badge.style.cursor = 'default';
+            badge.onclick = null;
+        }
+        if (badgeText) badgeText.textContent = '已同步';
+    }
+
+    if (!d || !d.ok) {
+        btn.disabled = true;
+        sum.className = 'pending-summary';
+        sum.textContent = '无法检测变更';
+        if (badge) {
+            badge.className = 'commit-status is-unknown';
+            badge.style.cursor = 'default';
+            badge.onclick = null;
+        }
+        if (badgeText) badgeText.textContent = '状态未知';
+        return;
+    }
+    lastPending = d;
+    const nA = (d.added || []).length;
+    const nM = (d.modified || []).length;
+    const nD = (d.deleted || []).length;
+    const n = nA + nM + nD;
+    pendingDirtyCount = n;
+    if (!d.has_changes || n === 0) {
+        btn.disabled = true;
+        sum.className = 'pending-summary clean';
+        sum.textContent = '无可提交变更';
+        sum.title = '与 HEAD 一致';
+        setCleanBadge();
+        return;
+    }
+    btn.disabled = false;
+    const parts = [];
+    if (nA) parts.push('新增' + nA);
+    if (nM) parts.push('修改' + nM);
+    if (nD) parts.push('删除' + nD);
+    const prefix = d.is_first ? '首次提交 · ' : '相对 r' + (d.head_revision || 0) + ' · ';
+    sum.className = 'pending-summary has-changes';
+    sum.textContent = prefix + parts.join(' · ');
+    sum.title = '共 ' + n + ' 项待提交（跟踪 ' + (d.total_files || 0) + ' 个文件）';
+    if (badge) {
+        badge.className = 'commit-status is-dirty';
+        badge.style.cursor = 'pointer';
+        badge.onclick = function() { if (!btn.disabled) showCommitModal(); };
+    }
+    if (badgeText) badgeText.textContent = '有未提交变更';
+}
+
+function refreshVersionToolbar() {
+    api('pending_changes', 'GET', null, applyPendingToToolbar);
+}
+
+function getMkdirParent() {
+    const sel = primarySelection();
+    if (sel.type === 'dir' && sel.path != null) return sel.path;
+    if (sel.type === 'file' && sel.path) {
+        const i = sel.path.lastIndexOf('/');
+        return i >= 0 ? sel.path.slice(0, i) : '';
+    }
+    return '';
+}
+
+function updateSelHint() {
+    const hint = document.getElementById('selHint');
+    const paths = selectedPaths();
+    if (!paths.length) {
+        hint.textContent = '选文件预览 · 有改动后点工具栏「提交」· Ctrl/Shift 多选';
+        return;
+    }
+    if (paths.length > 1) {
+        hint.textContent = '已选 ' + paths.length + ' 项（可删除 / 移动）';
+        return;
+    }
+    const sel = primarySelection();
+    if (sel.type === 'dir') {
+        hint.textContent = '已选目录: /' + (sel.path || '') + ' · 右键可上传到此处';
+    } else {
+        hint.textContent = '已选: ' + sel.path;
+    }
+}
+
+function applySelectionHighlight() {
+    const multi = selectedPaths().length > 1;
+    document.querySelectorAll('.tree-row').forEach(el => {
+        const on = Object.prototype.hasOwnProperty.call(selectedMap, el.dataset.path);
+        el.classList.toggle('selected', on);
+        el.classList.toggle('multi', on && multi);
+    });
+    updateSelHint();
+}
+
+function clearSelection() {
+    selectedMap = {};
+    lastClickedPath = null;
+    applySelectionHighlight();
+}
+
+function setSingleSelection(path, type) {
+    selectedMap = {};
+    selectedMap[path] = type;
+    lastClickedPath = path;
+    applySelectionHighlight();
+}
+
+function toggleSelection(path, type) {
+    if (Object.prototype.hasOwnProperty.call(selectedMap, path)) {
+        delete selectedMap[path];
+        if (lastClickedPath === path) lastClickedPath = selectedPaths()[0] || null;
+    } else {
+        selectedMap[path] = type;
+        lastClickedPath = path;
+    }
+    applySelectionHighlight();
+}
+
+function getVisibleRows() {
+    const rows = [];
+    const root = document.getElementById('rootDrop');
+    if (root) rows.push(root);
+    document.querySelectorAll('#fileList .tree-row').forEach(r => {
+        // skip if inside collapsed / filtered-out ancestor
+        let hide = false;
+        let p = r.parentElement;
+        while (p && p.id !== 'fileList') {
+            if (p.classList && p.classList.contains('tree-children') && p.classList.contains('collapsed')) {
+                hide = true; break;
+            }
+            if (p.classList && p.classList.contains('tree-node') && p.classList.contains('tree-filter-hide')) {
+                hide = true; break;
+            }
+            p = p.parentElement;
+        }
+        if (!hide) rows.push(r);
+    });
+    return rows;
+}
+
+function selectRange(toPath, toType) {
+    const rows = getVisibleRows();
+    let fromIdx = -1, toIdx = -1;
+    rows.forEach((r, i) => {
+        if (r.dataset.path === lastClickedPath) fromIdx = i;
+        if (r.dataset.path === toPath) toIdx = i;
+    });
+    if (fromIdx < 0) {
+        setSingleSelection(toPath, toType);
+        return;
+    }
+    if (toIdx < 0) toIdx = fromIdx;
+    const a = Math.min(fromIdx, toIdx), b = Math.max(fromIdx, toIdx);
+    selectedMap = {};
+    for (let i = a; i <= b; i++) {
+        selectedMap[rows[i].dataset.path] = rows[i].dataset.type;
+    }
+    lastClickedPath = toPath;
+    applySelectionHighlight();
+}
+
+function loadFiles(done) {
+    api('files', 'GET', null, tree => {
+        const list = document.getElementById('fileList');
+        if (!tree || tree.length === 0) {
+            list.innerHTML = '<div class="empty-list">暂无文件，请上传到根目录或新建文件夹</div>';
+        } else {
+            list.innerHTML = renderTree(tree, 0);
+            bindTreeEvents(list);
+            applyFileFilter();
+        }
+        // drop invalid selections
+        Object.keys(selectedMap).forEach(p => {
+            if (p === '') return;
+            const exists = list.querySelector('.tree-row[data-path]') &&
+                Array.from(list.querySelectorAll('.tree-row')).some(el => el.dataset.path === p);
+            if (!exists && p !== '') {
+                // keep root selection; for others check
+                const found = Array.from(document.querySelectorAll('.tree-row')).some(el => el.dataset.path === p);
+                if (!found) delete selectedMap[p];
+            }
+        });
+        applySelectionHighlight();
+        if (done) done();
+    }, () => { if (done) done(); showToast('加载文件列表失败', 'error'); });
+}
+
+function renderTree(nodes, depth) {
+    let html = '';
+    (nodes || []).forEach(n => {
+        const isDir = n.type === 'dir';
+        const pad = 0.5 + depth * 1;
+        if (isDir && expandedDirs[n.path] === undefined) expandedDirs[n.path] = true;
+        const expanded = isDir ? !!expandedDirs[n.path] : false;
+        const twist = isDir ? (expanded ? '▼' : '▶') : '';
+        const icon = isDir ? '📁' : '📄';
+        html += '<div class="tree-node" data-path="' + esc(n.path) + '" data-type="' + n.type + '">';
+        html += '<div class="tree-row" draggable="true" data-path="' + esc(n.path) + '" data-type="' + n.type + '"' +
+            ' data-name="' + esc(n.name || '') + '"' +
+            ' data-size="' + esc(n.size || '') + '"' +
+            ' data-time="' + esc(n.time || '') + '"' +
+            ' data-status="' + esc(n.status || '') + '"' +
+            ' style="padding-left:' + pad + 'rem">';
+        html += '<div class="label"><span class="twist' + (isDir ? '' : ' empty') + '">' + twist + '</span><span class="icon">' + icon + '</span>';
+        html += '<span class="name" title="' + esc(n.path) + '">' + esc(n.name) + '</span></div>';
+        if (isDir) {
+            html += '<div class="meta"></div><div class="status"></div>';
+        } else {
+            html += '<div class="meta" title="' + esc(n.time || '') + '">' + esc(n.time || '') + '</div>';
+            html += '<div class="status" style="color:' + esc(n.color || '#888') + '">' + esc(n.status || '') + '</div>';
+        }
+        html += '</div>';
+        if (isDir) {
+            html += '<div class="tree-children' + (expanded ? '' : ' collapsed') + '">';
+            html += renderTree(n.children || [], depth + 1);
+            html += '</div>';
+        }
+        html += '</div>';
+    });
+    return html;
+}
+
+function bindTreeEvents(list) {
+    list.querySelectorAll('.tree-row').forEach(row => {
+        row.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const path = this.dataset.path;
+            const type = this.dataset.type;
+            const twistEl = e.target.closest ? e.target.closest('.twist') : null;
+            if (twistEl && !twistEl.classList.contains('empty') && type === 'dir') {
+                toggleDir(path, this);
+                return;
+            }
+            handleRowClick(path, type, e);
+        });
+        row.addEventListener('dblclick', function(e) {
+            e.stopPropagation();
+            if (this.dataset.type === 'dir') toggleDir(this.dataset.path, this);
+            else openExplorer('item', this.dataset.path);
+        });
+        row.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const path = this.dataset.path;
+            const type = this.dataset.type;
+            if (!Object.prototype.hasOwnProperty.call(selectedMap, path)) {
+                setSingleSelection(path, type);
+            }
+            lastClickedPath = path;
+            showCtxMenu(e.clientX, e.clientY);
+        });
+        row.addEventListener('dragstart', function(e) {
+            const path = this.dataset.path;
+            if (!Object.prototype.hasOwnProperty.call(selectedMap, path)) {
+                setSingleSelection(path, this.dataset.type);
+            }
+            dragSrcPath = path;
+            e.dataTransfer.setData('text/plain', path);
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        row.addEventListener('dragend', function() {
+            dragSrcPath = null;
+            list.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+        });
+        if (row.dataset.type === 'dir') {
+            row.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                this.classList.add('drag-over');
+            });
+            row.addEventListener('dragleave', function() {
+                this.classList.remove('drag-over');
+            });
+            row.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('drag-over');
+                const dest = this.dataset.path;
+                const srcs = selectedPaths().filter(p => p !== '' && p !== dest);
+                if (!srcs.length) {
+                    const src = e.dataTransfer.getData('text/plain') || dragSrcPath;
+                    if (src && src !== dest) doMovePaths([src], dest);
+                } else {
+                    doMovePaths(srcs, dest);
+                }
+            });
+        }
+    });
+    list.addEventListener('dragover', function(e) {
+        if (e.target === list) { e.preventDefault(); }
+    });
+    list.addEventListener('drop', function(e) {
+        if (e.target !== list) return;
+        e.preventDefault();
+        const srcs = selectedPaths().filter(p => p !== '');
+        if (srcs.length) doMovePaths(srcs, '');
+        else {
+            const src = e.dataTransfer.getData('text/plain') || dragSrcPath;
+            if (src) doMovePaths([src], '');
+        }
+    });
+}
+
+function handleRowClick(path, type, e) {
+    if (e.shiftKey && lastClickedPath != null) {
+        selectRange(path, type);
+    } else if (e.ctrlKey || e.metaKey) {
+        toggleSelection(path, type);
+    } else {
+        setSingleSelection(path, type);
+        if (type === 'file') {
+            document.getElementById('previewSub').textContent = path;
+            previewFile(path);
+        } else {
+            document.getElementById('previewSub').textContent = '/' + (path || '');
+            hidePreviewToolbar();
+            resetPreviewTransform();
+            const el = document.getElementById('previewContent');
+            const vp = document.getElementById('previewViewport');
+            if (vp) vp.classList.remove('pdf-mode');
+            el.classList.remove('pdf-mode');
+            el.innerHTML = '<div class="preview-empty">' +
+                '<div>已选文件夹 /' + esc(path) + '</div>' +
+                '<div class="flow">可在此上传、新建子文件夹；整库变更请用工具栏「提交」</div></div>';
+        }
+    }
+    hideCtxMenu();
+}
+
+function getTreeChildren(node) {
+    if (!node) return null;
+    for (let i = 0; i < node.children.length; i++) {
+        const c = node.children[i];
+        if (c.classList && c.classList.contains('tree-children')) return c;
+    }
+    return null;
+}
+
+function toggleDir(path, rowEl) {
+    expandedDirs[path] = !expandedDirs[path];
+    applyDirExpandState(path, rowEl, !!expandedDirs[path]);
+}
+
+function applyDirExpandState(path, rowEl, expanded) {
+    const node = rowEl ? rowEl.closest('.tree-node') : null;
+    const kids = getTreeChildren(node);
+    const twist = rowEl ? rowEl.querySelector('.twist') : null;
+    if (kids) {
+        if (expanded) kids.classList.remove('collapsed');
+        else kids.classList.add('collapsed');
+    }
+    if (twist && !twist.classList.contains('empty')) {
+        twist.textContent = expanded ? '▼' : '▶';
+    }
+}
+
+function setAllDirsExpanded(expanded) {
+    const list = document.getElementById('fileList');
+    list.querySelectorAll('.tree-node[data-type="dir"]').forEach(node => {
+        const path = node.dataset.path;
+        expandedDirs[path] = expanded;
+        for (let i = 0; i < node.children.length; i++) {
+            if (node.children[i].classList && node.children[i].classList.contains('tree-row')) {
+                applyDirExpandState(path, node.children[i], expanded);
+                break;
+            }
+        }
+    });
+}
+
+function expandAllDirs() { setAllDirsExpanded(true); }
+function collapseAllDirs() { setAllDirsExpanded(false); }
+
+function getFileSearchQuery() {
+    const input = document.getElementById('fileSearchInput');
+    return input ? String(input.value || '').trim().toLowerCase() : '';
+}
+
+function applyFileFilter() {
+    const list = document.getElementById('fileList');
+    const clearBtn = document.getElementById('fileSearchClear');
+    const q = getFileSearchQuery();
+    if (clearBtn) clearBtn.classList.toggle('show', !!q);
+    if (!list) return;
+
+    const oldEmpty = list.querySelector('.empty-list.filter-empty');
+    if (oldEmpty) oldEmpty.remove();
+
+    const nodes = list.querySelectorAll('.tree-node');
+    if (!q) {
+        nodes.forEach(n => {
+            n.classList.remove('tree-filter-hide');
+            const row = n.querySelector(':scope > .tree-row');
+            if (row) row.classList.remove('tree-filter-dim');
+        });
+        return;
+    }
+
+    const matched = new Set();
+    nodes.forEach(node => {
+        const row = node.querySelector(':scope > .tree-row');
+        if (!row) return;
+        const name = (row.dataset.name || '').toLowerCase();
+        const path = (row.dataset.path || '').toLowerCase();
+        if (name.includes(q) || path.includes(q)) matched.add(node);
+    });
+
+    const keep = new Set(matched);
+    matched.forEach(node => {
+        let p = node.parentElement;
+        while (p && p !== list) {
+            if (p.classList && p.classList.contains('tree-node')) keep.add(p);
+            p = p.parentElement;
+        }
+    });
+
+    nodes.forEach(node => {
+        const show = keep.has(node);
+        node.classList.toggle('tree-filter-hide', !show);
+        const row = node.querySelector(':scope > .tree-row');
+        if (row) row.classList.toggle('tree-filter-dim', show && !matched.has(node));
+        if (show && node.dataset.type === 'dir') {
+            const kids = getTreeChildren(node);
+            if (kids) kids.classList.remove('collapsed');
+            const twist = row && row.querySelector('.twist');
+            if (twist && !twist.classList.contains('empty')) twist.textContent = '▼';
+        }
+    });
+
+    if (keep.size === 0 && !list.querySelector('.empty-list')) {
+        const tip = document.createElement('div');
+        tip.className = 'empty-list filter-empty';
+        tip.textContent = '无匹配「' + q + '」的文件';
+        list.appendChild(tip);
+    }
+}
+
+function clearFileSearch() {
+    const input = document.getElementById('fileSearchInput');
+    if (input) {
+        input.value = '';
+        input.focus();
+    }
+    applyFileFilter();
+}
+
+(function initFileSearch() {
+    const input = document.getElementById('fileSearchInput');
+    const clearBtn = document.getElementById('fileSearchClear');
+    if (!input) return;
+    let timer = null;
+    input.addEventListener('input', function() {
+        clearTimeout(timer);
+        timer = setTimeout(applyFileFilter, 120);
+    });
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            clearFileSearch();
+        }
+    });
+    if (clearBtn) clearBtn.addEventListener('click', clearFileSearch);
+})();
+
+function isPreviewFullscreen() {
+    const panel = document.getElementById('workPanel');
+    return !!(panel && panel.classList.contains('fullscreen'));
+}
+
+function icoSvg(paths) {
+    return '<svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true">' + paths + '</svg>';
+}
+const ICO_MAXIMIZE = '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>';
+const ICO_MINIMIZE = '<path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/>';
+
+function setPreviewFullscreen(on) {
+    const panel = document.getElementById('workPanel');
+    const btn = document.getElementById('previewFsBtn');
+    if (!panel) return;
+    panel.classList.toggle('fullscreen', !!on);
+    if (btn) {
+        btn.classList.toggle('is-exit', !!on);
+        btn.innerHTML = icoSvg(on ? ICO_MINIMIZE : ICO_MAXIMIZE);
+        btn.title = on ? '退出全屏 (Esc)' : '全屏预览 (Esc 退出)';
+        btn.setAttribute('aria-label', on ? '退出全屏' : '全屏预览');
+    }
+    document.body.style.overflow = on ? 'hidden' : '';
+}
+
+function togglePreviewFullscreen() {
+    setPreviewFullscreen(!isPreviewFullscreen());
+}
+
+let previewZoomScale = 1;
+let previewRotateDeg = 0;
+let previewCurrentFile = '';
+
+function resetPreviewTransform() {
+    previewZoomScale = 1;
+    previewRotateDeg = 0;
+    applyPreviewTransform();
+}
+
+function applyPreviewTransform() {
+    const stage = document.getElementById('previewStage');
+    const label = document.getElementById('previewZoomLabel');
+    if (stage) {
+        stage.style.transform = 'scale(' + previewZoomScale + ') rotate(' + previewRotateDeg + 'deg)';
+    }
+    if (label) label.textContent = Math.round(previewZoomScale * 100) + '%';
+}
+
+function previewZoom(delta) {
+    previewZoomScale = Math.min(3, Math.max(0.4, Math.round((previewZoomScale + delta) * 100) / 100));
+    applyPreviewTransform();
+}
+
+function previewZoomReset() {
+    previewZoomScale = 1;
+    applyPreviewTransform();
+}
+
+function previewRotate(delta) {
+    previewRotateDeg = (previewRotateDeg + delta) % 360;
+    applyPreviewTransform();
+}
+
+function showPreviewToolbar(show) {
+    const tb = document.getElementById('previewToolbar');
+    if (!tb) return;
+    tb.classList.toggle('show', !!show);
+}
+
+function hidePreviewToolbar() {
+    showPreviewToolbar(false);
+    previewCurrentFile = '';
+}
+
+function downloadPreviewFile() {
+    if (!previewCurrentFile) {
+        showToast('没有可下载的文件', 'error');
+        return;
+    }
+    downloadWorkspaceFile(previewCurrentFile);
+}
+
+function downloadWorkspaceFile(path) {
+    const base = String(path).split('/').pop() || 'download';
+    const url = '/api/download?file=' + encodeURIComponent(path);
+    showLoading('正在下载…');
+    fetch(url).then(function(r) {
+        if (!r.ok) {
+            return r.json().then(function(j) {
+                throw new Error((j && j.error) || ('HTTP ' + r.status));
+            }).catch(function(e) {
+                if (e && e.message) throw e;
+                throw new Error('HTTP ' + r.status);
+            });
+        }
+        return r.blob();
+    }).then(function(blob) {
+        hideLoading();
+        const a = document.createElement('a');
+        const obj = URL.createObjectURL(blob);
+        a.href = obj;
+        a.download = base;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function() { URL.revokeObjectURL(obj); }, 2000);
+        document.getElementById('statusBar').textContent = '已下载 ' + base;
+    }).catch(function(err) {
+        hideLoading();
+        showToast('下载失败: ' + (err && err.message ? err.message : err), 'error');
+    });
+}
+
+function previewFile(name) {
+    const el = document.getElementById('previewContent');
+    const sub = document.getElementById('previewSub');
+    const vp = document.getElementById('previewViewport');
+    if (sub) sub.textContent = name || '选中文件后显示';
+    previewCurrentFile = name || '';
+    resetPreviewTransform();
+    if (vp) vp.classList.remove('pdf-mode');
+    el.classList.remove('pdf-mode');
+    showPreviewToolbar(false);
+    el.innerHTML = '<div class="preview-loading"><div class="spinner"></div><div>正在加载预览...</div></div>';
+    api('preview?name=' + encodeURIComponent(name), 'GET', null, d => {
+        if (d.type === 'docx') {
+            showPreviewToolbar(true);
+            renderDocx(name, el);
+        } else if (d.type === 'markdown') {
+            showPreviewToolbar(true);
+            renderMarkdown(name, el);
+        } else if (d.type === 'image') {
+            showPreviewToolbar(true);
+            el.innerHTML = '<img class="preview-image" src="/api/raw?file=' +
+                encodeURIComponent(name) + '" alt="' + esc(d.name || name) + '">';
+        } else if (d.type === 'pdf' && d.url) {
+            showPreviewToolbar(true);
+            if (vp) vp.classList.add('pdf-mode');
+            el.classList.add('pdf-mode');
+            el.innerHTML = '<iframe src="' + d.url + '" style="width:100%;height:100%;border:none;min-height:70vh"></iframe>';
+        } else if (d.type === 'unsupported') {
+            showPreviewToolbar(false);
+            renderUnsupported(el, d, name);
+        } else if (d.is_html && d.html) {
+            showPreviewToolbar(true);
+            el.innerHTML = d.html;
+        } else if (d.html != null) {
+            showPreviewToolbar(true);
+            el.innerHTML = '<pre style="white-space:pre-wrap;font-family:inherit;margin:0">' +
+                String(d.html).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre>';
+        } else {
+            showPreviewToolbar(false);
+            renderUnsupported(el, d || {}, name);
+        }
+    }, function(err) {
+        showPreviewToolbar(false);
+        el.innerHTML = '<div class="preview-empty">加载预览失败</div>';
+    });
+}
+
+function renderUnsupported(container, d, path) {
+    const name = d.name || (path ? String(path).split('/').pop() : '未知文件');
+    const ext = d.ext || '';
+    const size = d.size || '';
+    const hint = d.hint || d.error || '该类型暂不支持在线预览，可下载到本地查看。';
+    const metaParts = [];
+    if (ext) metaParts.push(ext.replace(/^\./, '').toUpperCase() || '未知类型');
+    if (size) metaParts.push(size);
+    container.innerHTML =
+        '<div class="preview-unsupported">' +
+            '<div class="big-icon">📦</div>' +
+            '<div class="fname">' + esc(name) + '</div>' +
+            '<div class="meta">' + esc(metaParts.join(' · ') || '无法预览') + '</div>' +
+            '<div class="hint">' + esc(hint) + '</div>' +
+            (path
+                ? '<button type="button" class="btn btn-primary" data-dl-path="' + esc(path) + '">下载文件</button>'
+                : '') +
+        '</div>';
+}
+
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest && e.target.closest('[data-dl-path]');
+    if (!btn) return;
+    const p = btn.getAttribute('data-dl-path');
+    if (p) downloadWorkspaceFile(p);
+});
+
+function renderDocx(name, container) {
+    fetch('/api/raw?file=' + encodeURIComponent(name))
+        .then(r => r.arrayBuffer())
+        .then(buf => {
+            container.innerHTML = '';
+            return docx.renderAsync(buf, container, null, {
+                className: 'docx-content',
+                inWrapper: true,
+                ignoreWidth: false,
+                ignoreHeight: true,
+                breakPages: true,
+                experimental: true
+            });
+        })
+        .then(() => { console.log('docx rendered ok'); })
+        .catch(err => {
+            container.innerHTML = '<div class="preview-empty">Word 文档渲染失败: ' +
+                (err.message || err) + '</div>';
+        });
+}
+
+function renderMarkdown(name, container) {
+    fetch('/api/raw?file=' + encodeURIComponent(name))
+        .then(r => r.text())
+        .then(text => {
+            if (typeof marked !== 'undefined' && marked.parse) {
+                container.innerHTML = marked.parse(text);
+            } else {
+                container.innerHTML = '<pre style="white-space:pre-wrap;font-family:inherit;margin:0">' +
+                    text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre>';
+            }
+        })
+        .catch(err => {
+            container.innerHTML = '<div class="preview-empty">Markdown 渲染失败: ' +
+                (err.message || err) + '</div>';
+        });
+}
+
+function deleteSelected() {
+    const paths = selectedPaths().filter(p => p !== '');
+    if (!paths.length) {
+        showToast('请先选择要删除的文件或文件夹', 'error'); return;
+    }
+    const tip = paths.length === 1
+        ? '确定删除 "' + paths[0] + '" 吗？'
+        : '确定删除选中的 ' + paths.length + ' 项吗？';
+    if (!confirm(tip + '\n已保存的版本中仍保留历史副本。')) return;
+    showLoading('正在删除...');
+    api('delete', 'POST', {names: paths}, d => {
+        hideLoading();
+        showToast(d.msg, d.ok ? 'success' : 'error');
+        clearSelection();
+        refresh();
+    }, () => { hideLoading(); showToast('删除失败', 'error'); });
+}
+
+function showMkdirDialog() {
+    if (!workspaceReady) { showToast('工作区未就绪', 'error'); return; }
+    nameModalMode = 'mkdir';
+    const parent = getMkdirParent();
+    nameModalBase = parent;
+    document.getElementById('nameModalTitle').textContent =
+        parent ? '在 /' + parent + ' 下新建文件夹' : '在根目录新建文件夹';
+    document.getElementById('nameModalInput').value = '';
+    document.getElementById('nameModal').classList.add('show');
+    setTimeout(() => document.getElementById('nameModalInput').focus(), 100);
+}
+
+function showRenameDialog() {
+    const sel = primarySelection();
+    if (sel.path == null || sel.path === '') {
+        showToast('请先选择要重命名的文件或文件夹', 'error'); return;
+    }
+    if (selectedPaths().length > 1) {
+        showToast('重命名仅支持单选', 'error'); return;
+    }
+    nameModalMode = 'rename';
+    nameModalBase = sel.path;
+    document.getElementById('nameModalTitle').textContent = '重命名';
+    document.getElementById('nameModalInput').value = sel.path.split('/').pop();
+    document.getElementById('nameModal').classList.add('show');
+    setTimeout(() => {
+        const inp = document.getElementById('nameModalInput');
+        inp.focus();
+        inp.select();
+    }, 100);
+}
+
+function confirmNameModal() {
+    const name = document.getElementById('nameModalInput').value.trim();
+    if (!name) { showToast('请输入名称', 'error'); return; }
+    if (nameModalMode === 'mkdir') {
+        const full = nameModalBase ? (nameModalBase + '/' + name) : name;
+        showLoading('正在创建文件夹...');
+        api('mkdir', 'POST', {path: full}, d => {
+            hideLoading();
+            closeModal('nameModal');
+            showToast(d.msg, d.ok ? 'success' : 'error');
+            if (d.ok) {
+                if (nameModalBase) expandedDirs[nameModalBase] = true;
+                refresh();
+            }
+        }, () => { hideLoading(); showToast('创建失败', 'error'); });
+    } else if (nameModalMode === 'rename') {
+        showLoading('正在重命名...');
+        api('rename', 'POST', {src: nameModalBase, name: name}, d => {
+            hideLoading();
+            closeModal('nameModal');
+            showToast(d.msg, d.ok ? 'success' : 'error');
+            if (d.ok) { clearSelection(); refresh(); }
+        }, () => { hideLoading(); showToast('重命名失败', 'error'); });
+    }
+}
+
+function showMoveDialog() {
+    const paths = selectedPaths().filter(p => p !== '');
+    if (!paths.length) {
+        showToast('请先选择要移动的文件或文件夹', 'error'); return;
+    }
+    showLoading('加载目录...');
+    api('dirs', 'GET', null, data => {
+        hideLoading();
+        const sel = document.getElementById('moveDestSelect');
+        const options = (data.dirs || []).filter(d => {
+            return !paths.some(src => d.path === src || (src && d.path.startsWith(src + '/')));
+        });
+        sel.innerHTML = options.map(d =>
+            '<option value="' + esc(d.path) + '">' + esc(d.label) + '</option>'
+        ).join('');
+        document.getElementById('moveSrcLabel').textContent =
+            paths.length === 1 ? ('移动: ' + paths[0]) : ('移动 ' + paths.length + ' 项');
+        document.getElementById('moveModal').classList.add('show');
+    }, () => { hideLoading(); showToast('加载目录失败', 'error'); });
+}
+
+function confirmMove() {
+    const dest = document.getElementById('moveDestSelect').value;
+    const paths = selectedPaths().filter(p => p !== '');
+    closeModal('moveModal');
+    doMovePaths(paths, dest);
+}
+
+function doMovePaths(paths, dest) {
+    paths = (paths || []).filter(p => p !== '' && p != null);
+    if (!paths.length) return;
+    showLoading('正在移动...');
+    api('move', 'POST', {srcs: paths, dest: dest || ''}, d => {
+        hideLoading();
+        showToast(d.msg, d.ok ? 'success' : 'error');
+        if (d.ok) {
+            if (dest) expandedDirs[dest] = true;
+            clearSelection();
+            refresh();
+        }
+    }, () => { hideLoading(); showToast('移动失败', 'error'); });
+}
+
+function showCtxMenu(x, y) {
+    const menu = document.getElementById('ctxMenu');
+    const sel = primarySelection();
+    const multi = selectedPaths().length > 1;
+    const isDir = sel.type === 'dir';
+    const isRoot = sel.path === '';
+    const show = (act, on) => {
+        const el = menu.querySelector('[data-act="' + act + '"]');
+        if (el) el.style.display = on ? 'block' : 'none';
+    };
+    show('detail', !multi);
+    show('mkdir', isDir && !multi);
+    show('upload', isDir && !multi);
+    show('reveal', true);
+    show('rename', !multi && !isRoot);
+    show('move', !isRoot && selectedPaths().some(p => p !== ''));
+    show('delete', !isRoot && selectedPaths().some(p => p !== ''));
+    menu.querySelectorAll('.sep').forEach(s => { s.style.display = 'block'; });
+    menu.classList.add('show');
+    const w = menu.offsetWidth || 160;
+    const h = menu.offsetHeight || 220;
+    menu.style.left = Math.min(x, window.innerWidth - w - 8) + 'px';
+    menu.style.top = Math.min(y, window.innerHeight - h - 8) + 'px';
+}
+
+function hideCtxMenu() {
+    document.getElementById('ctxMenu').classList.remove('show');
+}
+
+function showItemDetail() {
+    const sel = primarySelection();
+    if (sel.path == null) return;
+    const row = (sel.path === '')
+        ? document.getElementById('rootDrop')
+        : document.querySelector('.tree-row[data-path="' + CSS.escape(sel.path) + '"]');
+    const isDir = sel.type === 'dir';
+    const name = (row && row.dataset.name) || (sel.path === '' ? '根目录' : String(sel.path).split('/').pop());
+    const size = (row && row.dataset.size) || '';
+    const time = (row && row.dataset.time) || '';
+    const status = (row && row.dataset.status) || '';
+    const pathShow = sel.path === '' ? '/' : ('/' + sel.path);
+
+    const iconEl = document.getElementById('detailIcon');
+    iconEl.textContent = isDir ? '📁' : '📄';
+    iconEl.classList.toggle('is-dir', isDir);
+    document.getElementById('detailTitle').textContent = name;
+
+    let statusCls = '';
+    if (status === '正常' || status === '已提交') statusCls = 'status-ok';
+    else if (status === '已修改') statusCls = 'status-mod';
+    else if (status === '新增') statusCls = 'status-new';
+    else if (status === '忽略') statusCls = 'status-ign';
+
+    let badges = '<span class="detail-badge">' + (isDir ? '文件夹' : '文件') + '</span>';
+    if (!isDir && status) {
+        badges += '<span class="detail-badge ' + statusCls + '">' + esc(status) + '</span>';
+    }
+    document.getElementById('detailBadges').innerHTML = badges;
+
+    let cards = '';
+    cards += '<div class="detail-card span-2"><div class="k">路径</div><div class="v path">' + esc(pathShow) + '</div></div>';
+    if (!isDir) {
+        cards += '<div class="detail-card"><div class="k">大小</div><div class="v">' + esc(size || '—') + '</div></div>';
+        cards += '<div class="detail-card"><div class="k">修改时间</div><div class="v">' + esc(time || '—') + '</div></div>';
+        cards += '<div class="detail-card span-2"><div class="k">版本状态</div><div class="v">' + esc(status || '—') + '</div></div>';
+    } else if (sel.path !== '') {
+        cards += '<div class="detail-card span-2"><div class="k">说明</div><div class="v">工作副本内的文件夹</div></div>';
+    } else {
+        cards += '<div class="detail-card span-2"><div class="k">说明</div><div class="v">工作副本根目录</div></div>';
+    }
+    document.getElementById('detailBody').innerHTML = '<div class="detail-grid">' + cards + '</div>';
+    document.getElementById('detailModal').classList.add('show');
+}
+
+function ctxAction(act) {
+    hideCtxMenu();
+    const sel = primarySelection();
+    if (act === 'detail') showItemDetail();
+    else if (act === 'mkdir') showMkdirDialog();
+    else if (act === 'upload') {
+        uploadTargetDir = (sel.type === 'dir' && sel.path != null) ? sel.path : '';
+        document.getElementById('fileInput').click();
+    }
+    else if (act === 'reveal') {
+        openExplorer('item', sel.path || '');
+    }
+    else if (act === 'rename') showRenameDialog();
+    else if (act === 'move') showMoveDialog();
+    else if (act === 'delete') deleteSelected();
+}
+
+document.getElementById('ctxMenu').addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-act]');
+    if (btn) {
+        e.preventDefault();
+        e.stopPropagation();
+        ctxAction(btn.getAttribute('data-act'));
+    }
+});
+
+document.addEventListener('click', hideCtxMenu);
+document.getElementById('nameModalInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') confirmNameModal();
+});
+
+(function initRootDrop() {
+    const root = document.getElementById('rootDrop');
+    if (!root) return;
+    root.addEventListener('click', function(e) {
+        handleRowClick('', 'dir', e);
+    });
+    root.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        if (!Object.prototype.hasOwnProperty.call(selectedMap, '')) {
+            setSingleSelection('', 'dir');
+        }
+        lastClickedPath = '';
+        showCtxMenu(e.clientX, e.clientY);
+    });
+    root.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        this.classList.add('drag-over');
+    });
+    root.addEventListener('dragleave', function() {
+        this.classList.remove('drag-over');
+    });
+    root.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+        const srcs = selectedPaths().filter(p => p !== '');
+        if (srcs.length) doMovePaths(srcs, '');
+        else {
+            const src = e.dataTransfer.getData('text/plain') || dragSrcPath;
+            if (src) doMovePaths([src], '');
+        }
+    });
+})();
+
+function uploadToRoot() {
+    if (!workspaceReady) { showToast('工作区未就绪', 'error'); return; }
+    uploadTargetDir = '';
+    document.getElementById('fileInput').click();
+}
+
+function uploadFiles(input) {
+    const files = input.files;
+    if (!files || files.length === 0) return;
+    if (!workspaceReady) { showToast('工作区未就绪', 'error'); input.value = ''; return; }
+    let done = 0;
+    let failed = 0;
+    const destDir = uploadTargetDir || '';
+    showLoading('正在上传 0/' + files.length + '...');
+    for (const f of files) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const b64 = e.target.result.split(',')[1];
+            api('upload', 'POST', {name: f.name, data: b64, dir: destDir}, d => {
+                done++;
+                if (!d.ok) failed++;
+                document.getElementById('globalLoadingMsg').textContent =
+                    '正在上传 ' + done + '/' + files.length + '...';
+                if (done === files.length) {
+                    hideLoading();
+                    input.value = '';
+                    uploadTargetDir = '';
+                    if (destDir) expandedDirs[destDir] = true;
+                    refresh();
+                    if (failed) showToast('上传完成，失败 ' + failed + ' 个', 'error');
+                    else showToast('已上传 ' + files.length + ' 个文件' + (destDir ? ('到 /' + destDir) : '到根目录'), 'success');
+                }
+            }, () => {
+                done++;
+                failed++;
+                document.getElementById('globalLoadingMsg').textContent =
+                    '正在上传 ' + done + '/' + files.length + '...';
+                if (done === files.length) {
+                    hideLoading();
+                    input.value = '';
+                    uploadTargetDir = '';
+                    refresh();
+                    showToast('上传完成，失败 ' + failed + ' 个', 'error');
+                }
+            });
+        };
+        reader.onerror = function() {
+            done++;
+            failed++;
+            if (done === files.length) {
+                hideLoading();
+                input.value = '';
+                refresh();
+                showToast('上传完成，失败 ' + failed + ' 个', 'error');
+            }
+        };
+        reader.readAsDataURL(f);
+    }
+}
+
+function renderChangeLines(changes) {
+    if (!changes) return '<div class="change-empty">无变更明细</div>';
+    let html = '';
+    (changes.added || []).forEach(p => {
+        html += '<div class="chg-line chg-a">+ A  ' + esc(p) + '</div>';
+    });
+    (changes.modified || []).forEach(p => {
+        html += '<div class="chg-line chg-m">~ M  ' + esc(p) + '</div>';
+    });
+    (changes.deleted || []).forEach(p => {
+        html += '<div class="chg-line chg-d">- D  ' + esc(p) + '</div>';
+    });
+    if (!html) html = '<div class="change-empty">无文件变更</div>';
+    return html;
+}
+
+function changeChipsHtml(changes) {
+    if (!changes) return '';
+    const nA = (changes.added || []).length;
+    const nM = (changes.modified || []).length;
+    const nD = (changes.deleted || []).length;
+    let html = '';
+    if (nA) html += '<span class="chip chip-a">+' + nA + '</span>';
+    if (nM) html += '<span class="chip chip-m">~' + nM + '</span>';
+    if (nD) html += '<span class="chip chip-d">-' + nD + '</span>';
+    if (!html) html = '<span class="chip" style="background:#eee;color:#888">无变更</span>';
+    return html;
+}
+
+function renderGroupedChanges(changes, revNum) {
+    if (!changes) return '<div class="change-empty">无变更明细</div>';
+    const groups = [
+        { key: 'added', label: '新增', cls: 'a', mark: '+ A' },
+        { key: 'modified', label: '修改', cls: 'm', mark: '~ M' },
+        { key: 'deleted', label: '删除', cls: 'd', mark: '- D' },
+    ];
+    let html = '';
+    let any = false;
+    const rev = Number(revNum);
+    const prev = findPrevRev(rev);
+    groups.forEach(g => {
+        const list = changes[g.key] || [];
+        if (!list.length) return;
+        any = true;
+        html += '<div class="hist-file-group">';
+        html += '<div class="group-title ' + g.cls + '">' + g.label + '（' + list.length + '）</div>';
+        html += '<div class="hist-file-list">';
+        list.forEach(p => {
+            const ep = esc(p);
+            let acts = '';
+            if (g.key === 'modified') {
+                // 修改：主按钮「修改前」，次按钮「修改后」
+                if (prev != null) {
+                    acts += '<button type="button" class="btn btn-sm btn-primary" data-act="dl" data-path="' + ep +
+                        '" data-rev="' + prev + '" data-kind="at" title="下载修改前（修订 r' + prev + '）">修改前</button>';
+                }
+                acts += '<button type="button" class="btn btn-sm btn-default" data-act="dl" data-path="' + ep +
+                    '" data-rev="' + rev + '" data-kind="at" title="下载修改后（修订 r' + rev + '）">修改后</button>';
+                acts += '<button type="button" class="btn btn-sm btn-default" data-act="diff" data-path="' + ep +
+                    '" data-rev="' + rev + '" data-kind="modified">对比</button>';
+            } else if (g.key === 'deleted') {
+                if (prev != null) {
+                    acts += '<button type="button" class="btn btn-sm btn-primary" data-act="dl" data-path="' + ep +
+                        '" data-rev="' + prev + '" data-kind="at" title="下载删除前的内容（r' + prev + '）">下载</button>';
+                }
+                acts += '<button type="button" class="btn btn-sm btn-default" data-act="diff" data-path="' + ep +
+                    '" data-rev="' + rev + '" data-kind="deleted">对比</button>';
+            } else {
+                // added
+                acts += '<button type="button" class="btn btn-sm btn-default" data-act="dl" data-path="' + ep +
+                    '" data-rev="' + rev + '" data-kind="at" title="下载本修订新增的文件（r' + rev + '）">下载</button>';
+                acts += '<button type="button" class="btn btn-sm btn-default" data-act="diff" data-path="' + ep +
+                    '" data-rev="' + rev + '" data-kind="added">对比</button>';
+            }
+            html += '<div class="chg-line chg-' + g.cls + '">' +
+                '<span class="chg-path" title="' + ep + '">' + g.mark + '  ' + ep + '</span>' +
+                '<span class="chg-acts">' + acts + '</span></div>';
+        });
+        html += '</div></div>';
+    });
+    if (!any) return '<div class="change-empty">本次提交无文件变更记录</div>';
+    return html;
+}
+
+// 历史详情内按钮：用 data-*，避免中文路径破坏 onclick 引号
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest && e.target.closest('#historyDetail [data-act]');
+    if (!btn) return;
+    e.stopPropagation();
+    const act = btn.getAttribute('data-act');
+    const path = btn.getAttribute('data-path');
+    const rev = Number(btn.getAttribute('data-rev'));
+    const kind = btn.getAttribute('data-kind');
+    if (!path || !Number.isFinite(rev) || rev < 0) return;
+    if (act === 'dl') downloadRevFile(path, rev, kind);
+    else if (act === 'diff') diffRevFile(path, rev, kind);
+});
+
+function downloadRevFile(path, rev, changeKind) {
+    // kind === 'at'：按给定 rev 精确下载；deleted 兼容旧调用时回退上一修订
+    let targetRev = Number(rev);
+    if (changeKind === 'deleted') {
+        const prev = findPrevRev(targetRev);
+        if (prev == null) {
+            showToast('没有更早的修订可下载该文件', 'error');
+            return;
+        }
+        targetRev = prev;
+    }
+    if (!targetRev || targetRev < 1) {
+        showToast('无效修订号', 'error');
+        return;
+    }
+    const url = '/api/rev_file?rev=' + encodeURIComponent(targetRev) +
+        '&file=' + encodeURIComponent(path);
+    const base = String(path).split('/').pop() || 'file';
+    const saveName = 'r' + targetRev + '_' + base;
+    showLoading('正在导出 r' + targetRev + ' …');
+    fetch(url).then(function(r) {
+        if (!r.ok) {
+            return r.json().then(function(j) {
+                throw new Error((j && j.error) || ('HTTP ' + r.status));
+            }).catch(function(e) {
+                if (e && e.message && e.message.indexOf('HTTP') === 0) throw e;
+                throw new Error((e && e.message) || ('HTTP ' + r.status));
+            });
+        }
+        return r.blob();
+    }).then(function(blob) {
+        hideLoading();
+        const a = document.createElement('a');
+        const obj = URL.createObjectURL(blob);
+        a.href = obj;
+        a.download = saveName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function() { URL.revokeObjectURL(obj); }, 2000);
+        document.getElementById('statusBar').textContent = '已导出 ' + saveName;
+    }).catch(function(err) {
+        hideLoading();
+        showToast('下载失败: ' + (err && err.message ? err.message : err), 'error');
+    });
+}
+
+function findPrevRev(rev) {
+    const earlier = historyCache
+        .map(v => v.version)
+        .filter(v => v < rev);
+    return earlier.length ? Math.max.apply(null, earlier) : null;
+}
+
+function diffRevFile(path, rev, changeKind) {
+    let fromRev, toRev;
+    if (changeKind === 'added') {
+        // 相对空 → 本修订
+        fromRev = 'empty';
+        toRev = rev;
+        // API 不支持 empty，用一个不存在的伪修订无法工作；改为 from=prev（文件不存在）或直接 to 与空
+        // 实现：from 用 prev（若无则用特殊），后端 missing 一侧即可
+        const prev = findPrevRev(rev);
+        fromRev = prev != null ? prev : 0; // r0 视为不存在
+        toRev = rev;
+    } else if (changeKind === 'deleted') {
+        const prev = findPrevRev(rev);
+        if (prev == null) {
+            showToast('没有更早修订可对比', 'error');
+            return;
+        }
+        fromRev = prev;
+        toRev = rev; // 本修订已删除 → to missing
+    } else {
+        // modified
+        const prev = findPrevRev(rev);
+        if (prev == null) {
+            showToast('没有更早修订可对比', 'error');
+            return;
+        }
+        fromRev = prev;
+        toRev = rev;
+    }
+    openDiffModal(path, fromRev, toRev);
+}
+
+function openDiffModal(path, fromRev, toRev) {
+    document.getElementById('diffTitle').textContent = '对比 · ' + path;
+    document.getElementById('diffMeta').textContent = '加载中…';
+    document.getElementById('diffBody').innerHTML = '<div class="diff-empty">正在生成对比…</div>';
+    document.getElementById('diffDlFrom').style.display = 'none';
+    document.getElementById('diffDlTo').style.display = 'none';
+    document.getElementById('diffModal').classList.add('show');
+
+    const q = 'diff?file=' + encodeURIComponent(path) +
+        '&from=' + encodeURIComponent(fromRev) +
+        '&to=' + encodeURIComponent(toRev);
+    api(q, 'GET', null, d => {
+        if (!d.ok) {
+            document.getElementById('diffMeta').textContent = d.msg || '对比失败';
+            document.getElementById('diffBody').innerHTML =
+                '<div class="diff-empty">' + esc(d.msg || '对比失败') + '</div>';
+            return;
+        }
+        let meta = esc(d.from_label) + ' → ' + esc(d.to_label);
+        if (d.mode === 'binary') {
+            meta += ' · 二进制';
+        } else if (d.identical) {
+            meta += ' · 内容相同';
+        } else if (d.stats) {
+            meta += ' · +' + d.stats.added + ' / -' + d.stats.removed + ' 行';
+        }
+        if (d.from_size != null || d.to_size != null) {
+            meta += ' · ' + formatBytes(d.from_size || 0) + ' → ' + formatBytes(d.to_size || 0);
+        }
+        document.getElementById('diffMeta').textContent = meta;
+
+        const btnFrom = document.getElementById('diffDlFrom');
+        const btnTo = document.getElementById('diffDlTo');
+        if (!d.from_missing && /^\d+$/.test(String(fromRev)) && Number(fromRev) > 0) {
+            btnFrom.style.display = '';
+            btnFrom.textContent = '下载修改前 ' + d.from_label;
+            btnFrom.onclick = function() {
+                downloadRevFile(path, Number(fromRev), 'at');
+            };
+        }
+        if (!d.to_missing && /^\d+$/.test(String(toRev)) && Number(toRev) > 0) {
+            btnTo.style.display = '';
+            btnTo.textContent = '下载修改后 ' + d.to_label;
+            btnTo.onclick = function() {
+                downloadRevFile(path, Number(toRev), 'at');
+            };
+        }
+
+        if (d.mode === 'binary') {
+            document.getElementById('diffBody').innerHTML =
+                '<div class="diff-empty">' + esc(d.msg || '二进制文件无法文本对比') +
+                '<br><br>请使用下方按钮分别下载两端版本</div>';
+            return;
+        }
+        if (d.identical || !d.unified) {
+            document.getElementById('diffBody').innerHTML =
+                '<div class="diff-empty">' + esc(d.msg || '两端内容相同') + '</div>';
+            return;
+        }
+        document.getElementById('diffBody').innerHTML = renderUnifiedDiff(d.unified);
+    }, () => {
+        document.getElementById('diffMeta').textContent = '请求失败';
+        document.getElementById('diffBody').innerHTML = '<div class="diff-empty">请求失败</div>';
+    });
+}
+
+function formatBytes(n) {
+    n = Number(n) || 0;
+    if (n < 1024) return n + ' B';
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+    return (n / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function renderUnifiedDiff(text) {
+    const lines = String(text || '').split('\n');
+    let html = '';
+    lines.forEach(line => {
+        let cls = 'ctx';
+        if (line.startsWith('+++') || line.startsWith('---') || line.startsWith('@@')) cls = 'dh';
+        else if (line.startsWith('+')) cls = 'add';
+        else if (line.startsWith('-')) cls = 'del';
+        html += '<div class="diff-line ' + cls + '">' + esc(line || ' ') + '</div>';
+    });
+    return html || '<div class="diff-empty">无差异输出</div>';
+}
+
+function showSaveDialog() { showCommitModal(); }
+function showHistory() { showHistoryModal(); }
+
+function showCommitModal() {
+    if (document.getElementById('toolbarCommitBtn').disabled) {
+        showToast('没有需要提交的变更', 'error');
+        return;
+    }
+    document.getElementById('pendingSummary').textContent = '正在检查工作副本变更…';
+    document.getElementById('pendingChanges').innerHTML = '';
+    document.getElementById('saveVersionBtn').disabled = true;
+    document.getElementById('commitModal').classList.add('show');
+    loadCommitPanel();
+}
+
+function showHistoryModal() {
+    selectedHistoryVer = null;
+    document.getElementById('historyModal').classList.add('show');
+    loadHistoryPanel();
+}
+
+function loadCommitPanel() {
+    document.getElementById('pendingSummary').textContent = '正在检查工作副本变更…';
+    document.getElementById('pendingChanges').innerHTML = '';
+    document.getElementById('saveVersionBtn').disabled = true;
+    api('pending_changes', 'GET', null, d => {
+        applyPendingToToolbar(d);
+        if (!d.ok) {
+            document.getElementById('pendingSummary').textContent = d.msg || '无法获取变更';
+            return;
+        }
+        if (!d.has_changes) {
+            document.getElementById('pendingSummary').textContent = '工作副本干净，没有需要提交的变更';
+            document.getElementById('pendingChanges').innerHTML = '<div class="change-empty">与 HEAD 一致</div>';
+            document.getElementById('saveVersionBtn').disabled = true;
+            return;
+        }
+        const parts = [];
+        if (d.added.length) parts.push('新增 ' + d.added.length);
+        if (d.modified.length) parts.push('修改 ' + d.modified.length);
+        if (d.deleted.length) parts.push('删除 ' + d.deleted.length);
+        document.getElementById('pendingSummary').textContent =
+            (d.is_first ? '首次提交 · ' : '相对 HEAD r' + (d.head_revision || 0) + ' · ') +
+            parts.join('，') + '（跟踪 ' + d.total_files + ' 个文件）';
+        document.getElementById('pendingChanges').innerHTML = renderChangeLines(d);
+        document.getElementById('saveVersionBtn').disabled = false;
+        setTimeout(() => document.getElementById('noteInput').focus(), 80);
+    }, () => {
+        document.getElementById('pendingSummary').textContent = '检查变更失败';
+    });
+}
+
+function doSaveVersion() {
+    const note = document.getElementById('noteInput').value.trim();
+    if (!note) {
+        showToast('请填写提交说明', 'error');
+        document.getElementById('noteInput').focus();
+        return;
+    }
+    showLoading('正在提交修订…');
+    api('save_version', 'POST', {note: note}, d => {
+        hideLoading();
+        if (d.ok) {
+            document.getElementById('noteInput').value = '';
+            closeModal('commitModal');
+            showToast(d.msg, 'success');
+            refresh();
+            showHistoryModal();
+        } else showToast(d.msg, 'error');
+    }, () => { hideLoading(); showToast('提交失败', 'error'); });
+}
+
+function loadHistoryPanel() {
+    const list = document.getElementById('historyList');
+    const detail = document.getElementById('historyDetail');
+    const countEl = document.getElementById('historyCount');
+    list.innerHTML = '<div class="change-empty">加载修订历史…</div>';
+    detail.innerHTML = '<div class="hist-detail-empty">加载中…</div>';
+    countEl.textContent = '';
+    api('history', 'GET', null, data => {
+        historyCache = data.history || [];
+        if (!historyCache.length) {
+            list.innerHTML = '<div class="change-empty">暂无修订历史</div>';
+            detail.innerHTML = '<div class="hist-detail-empty">提交后将在这里显示修订详情</div>';
+            countEl.textContent = '0 条修订';
+            return;
+        }
+        countEl.textContent = '共 ' + historyCache.length + ' 条修订';
+        let html = '';
+        historyCache.forEach(v => {
+            const note = (v.note || '').trim() || '（无说明）';
+            html += '<div class="hist-row" data-ver="' + v.version + '" onclick="selectHistoryRev(' + v.version + ')">' +
+                '<div class="rev">r' + v.version + '</div>' +
+                '<div class="meta">' +
+                    '<div class="note" title="' + esc(note) + '">' + esc(note) + '</div>' +
+                    '<div class="time">' + esc(v.time || '') + '</div>' +
+                    '<div class="chips">' + changeChipsHtml(v.changes) + '</div>' +
+                '</div>' +
+                '<div class="ops">' +
+                    '<button type="button" class="btn btn-sm btn-danger" onclick="event.stopPropagation();doRollback(' + v.version + ')">回滚</button>' +
+                '</div>' +
+            '</div>';
+        });
+        list.innerHTML = html;
+        const pick = selectedHistoryVer && historyCache.some(v => v.version === selectedHistoryVer)
+            ? selectedHistoryVer
+            : historyCache[0].version;
+        selectHistoryRev(pick);
+    }, () => {
+        list.innerHTML = '<div class="change-empty">加载历史失败</div>';
+        detail.innerHTML = '<div class="hist-detail-empty">加载失败</div>';
+    });
+}
+
+function selectHistoryRev(ver) {
+    selectedHistoryVer = ver;
+    document.querySelectorAll('.hist-row').forEach(row => {
+        row.classList.toggle('active', Number(row.dataset.ver) === Number(ver));
+    });
+    const v = historyCache.find(x => Number(x.version) === Number(ver));
+    const detail = document.getElementById('historyDetail');
+    if (!v) {
+        detail.innerHTML = '<div class="hist-detail-empty">未找到该修订</div>';
+        return;
+    }
+    const note = (v.note || '').trim();
+    const changes = v.changes || {};
+    const nA = (changes.added || []).length;
+    const nM = (changes.modified || []).length;
+    const nD = (changes.deleted || []).length;
+    const total = nA + nM + nD;
+    let html = '<div class="hist-detail-body">';
+    html += '<div class="hist-detail-title">' +
+        '<span class="rev-big">r' + v.version + '</span>' +
+        '<span class="when">' + esc(v.time || '') + '</span>' +
+        '</div>';
+    html += '<div class="hist-detail-note' + (note ? '' : ' empty') + '">' +
+        esc(note || '本次提交未填写说明') + '</div>';
+    html += '<div class="hist-section-label">变更概览 <span class="chips">' +
+        changeChipsHtml(changes) + '</span>' +
+        '<span style="font-weight:400;color:var(--muted)">共 ' + total + ' 项</span></div>';
+    html += renderGroupedChanges(changes, v.version);
+    html += '<div class="hist-detail-actions">' +
+        '<button type="button" class="btn btn-danger" onclick="doRollback(' + v.version + ')">回滚到此修订</button>' +
+        '<span style="font-size:var(--fs-sm);color:var(--muted);align-self:center">将覆盖工作副本中未提交的修改</span>' +
+        '</div>';
+    html += '</div>';
+    detail.innerHTML = html;
+}
+
+function doRollback(ver) {
+    if (confirm('确定将工作副本恢复到修订 r' + ver + ' 吗？\n未提交修改将被覆盖。')) {
+        showLoading('正在恢复到 r' + ver + '…');
+        api('rollback', 'POST', {version: ver}, d => {
+            hideLoading();
+            if (d.ok) {
+                closeModal('historyModal');
+                refresh();
+                showToast(d.msg, 'success');
+            } else showToast(d.msg, 'error');
+        }, () => { hideLoading(); showToast('恢复失败', 'error'); });
+    }
+}
+
+// 中间分割条拖拽调整左右面板宽度
+(function initSplitter() {
+    const splitter = document.getElementById('splitter');
+    const filePanel = document.getElementById('filePanel');
+    const main = document.querySelector('.main');
+    if (!splitter || !filePanel || !main) return;
+
+    let dragging = false;
+
+    splitter.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        dragging = true;
+        splitter.classList.add('dragging');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!dragging) return;
+        const rect = main.getBoundingClientRect();
+        let pct = ((e.clientX - rect.left) / rect.width) * 100;
+        if (pct < 15) pct = 15;
+        if (pct > 70) pct = 70;
+        filePanel.style.width = pct + '%';
+        filePanel.style.minWidth = '0';
+        filePanel.style.maxWidth = 'none';
+    });
+
+    document.addEventListener('mouseup', function() {
+        if (!dragging) return;
+        dragging = false;
+        splitter.classList.remove('dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+    });
+})();
+
+// 从资源管理器改完文件回到窗口时，静默更新状态（不重载预览）
+window.addEventListener('focus', function() { refreshQuiet(); });
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') refreshQuiet();
+});
+// 定时只刷新待提交统计，避免整页闪烁
+setInterval(function() {
+    if (document.visibilityState === 'visible' && workspaceReady && loadingCount === 0) {
+        refreshVersionToolbar();
+    }
+}, 15000);
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && isPreviewFullscreen()) {
+        // 有弹窗时优先关弹窗，不顺带退全屏
+        const openModal = document.querySelector('.modal-overlay.show');
+        if (openModal) return;
+        setPreviewFullscreen(false);
+    }
+});
+
+refresh();
+</script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Packaging / PyInstaller
+dist/
+build/
+/*.spec
+!scripts/*.spec
+
+# IDE / local tooling
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+.workbuddy-ai/
+
+# Runtime data & local binaries (do not ship)
+.docvm/
+*.exe
+!scripts/**
+
+# Logs / temp
+*.log
+*.tmp
+*.bak
