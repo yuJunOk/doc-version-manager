@@ -18,7 +18,7 @@
 - 增量提交与修订历史（内容寻址，相同文件不重复存储）
 - 忽略规则（`ignore.txt`）
 - 历史回滚、修订文件下载、文本/文档差异
-- Word / Markdown / 图片等预览（缩放、旋转、全屏）
+- Word / Markdown / 表格（xlsx、xls、csv）/ 图片等预览（缩放、旋转、全屏）
 - 系统托盘驻留；再次启动仅打开浏览器（单实例）
 
 ## 离线使用（推荐：exe）
@@ -99,6 +99,7 @@ scripts\build.bat
 ## 依赖
 
 - python-docx / mammoth — Word 预览
+- SheetJS（`xlsx.full.min.js`，随仓库 static）— 浏览器内预览 csv / xlsx / xls，多工作表 Tab
 - pywin32 — Word COM 转 PDF（可选，需安装 Microsoft Word）
 - pystray / Pillow — 系统托盘
 - pyinstaller — 打包

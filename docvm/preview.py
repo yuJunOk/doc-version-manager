@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""文档预览：docx→HTML / Word COM→PDF。"""
+"""文档预览：docx→HTML / Word COM→PDF。表格由前端 SheetJS 预览。"""
 
 from __future__ import annotations
 
@@ -43,9 +43,9 @@ def extract_docx_html(filepath: str) -> tuple[str, bool]:
         try:
             with open(filepath, "rb") as f:
                 result = mammoth.convert_to_html(f)
-                html = result.value
-                if html.strip():
-                    return html, True
+                html_out = result.value
+                if html_out.strip():
+                    return html_out, True
                 return "（文档为空或无可显示的内容）", False
         except Exception:
             pass

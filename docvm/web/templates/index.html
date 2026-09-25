@@ -155,15 +155,42 @@ header .btn-refresh .ico-svg { width: 0.85rem; height: 0.85rem; opacity: 0.95; }
 .btn-sm { padding: 0.25em 0.65em; font-size: 0.72rem; }
 .separator { width: 1px; height: 1.4rem; background: var(--line); margin: 0 0.25rem; }
 .main {
-    flex: 1; display: flex; overflow: hidden; padding: 0.65rem; gap: 0;
+    flex: 1; display: flex; overflow: hidden;
+    padding: 0.5rem 0.55rem 0.5rem 0.35rem; gap: 0;
     min-height: 0;
 }
 .file-panel {
     background: var(--surface); border: 1px solid var(--line);
     border-radius: var(--radius) 0 0 var(--radius);
     display: flex; flex-direction: column; overflow: hidden;
-    width: 36%; min-width: 18vw; max-width: 70%; flex-shrink: 0;
+    width: 25%; min-width: 12rem; max-width: 70%; flex-shrink: 0;
 }
+/* 窄文件区：收紧左边距，把宽度留给文件名 */
+.file-panel > .panel-header {
+    padding: 0.4rem 0.4rem 0.4rem 0.45rem; gap: 0.4rem;
+}
+.file-panel .file-search input {
+    padding: 0.25em 1.55em 0.25em 0.45em;
+}
+.file-panel .tree-header,
+.file-panel .tree-row,
+.file-panel .tree-row.root-drop {
+    padding-left: 0.4rem; padding-right: 0.35rem;
+    grid-template-columns: minmax(0, 1fr) 6.6rem 2.35rem;
+    gap: 0.3rem;
+}
+.file-panel .tree-header { padding-top: 0.3rem; padding-bottom: 0.3rem; }
+.file-panel .tree-row { padding-top: 0.28rem; padding-bottom: 0.28rem; }
+.file-panel .tree-row .meta {
+    font-size: 0.68rem; letter-spacing: -0.01em;
+}
+.file-panel .tree-row .status { font-size: 0.68rem; }
+.file-panel .tree-row .label { gap: 0.15rem; }
+.file-panel .tree-row .twist { width: 0.85rem; }
+.file-panel .file-actions {
+    padding: 0.35rem 0.4rem;
+}
+.file-panel .file-actions .hint { font-size: 0.68rem; }
 .splitter {
     width: 0.35rem; background: transparent; cursor: col-resize;
     flex-shrink: 0; z-index: 10; position: relative;
@@ -394,6 +421,22 @@ header .btn-refresh .ico-svg { width: 0.85rem; height: 0.85rem; opacity: 0.95; }
     /* 内容区：由 viewport 滚动；保留原排版样式挂在 stage 内 */
     padding: 1.25rem 5%;
     font-size: 0.9rem; line-height: 1.75; color: var(--text); background: #fafbfc;
+}
+/* 表格：锁定可视高度，横/竖滚动条都在预览窗边缘，不用滚到底才看到横条 */
+.preview-viewport.sheet-mode {
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    background: #fff;
+}
+.preview-viewport.sheet-mode .preview-stage {
+    flex: 1; min-height: 0; height: 100%;
+    display: flex; flex-direction: column;
+    transform: none !important; /* 表格不用缩放，避免撑破滚动容器 */
+}
+.preview-content.sheet-mode {
+    padding: 0; background: #fff;
+    display: flex; flex-direction: column;
+    flex: 1; min-height: 0; height: 100%;
 }
 .preview-viewport.pdf-mode { background: #525659; }
 .preview-viewport.pdf-mode .preview-content { padding: 0; height: 100%; background: #525659; }
@@ -767,6 +810,71 @@ header .btn-refresh .ico-svg { width: 0.85rem; height: 0.85rem; opacity: 0.95; }
 .preview-content .docx-wrapper > .docx {
     margin: 0 auto 1rem; box-shadow: 0 0.15rem 0.5rem rgba(0,0,0,0.12); background: white;
 }
+.sheet-viewer {
+    display: flex; flex-direction: column; gap: 0;
+    flex: 1; min-height: 0; height: 100%; width: 100%;
+}
+.sheet-tabs-wrap {
+    display: flex; align-items: stretch; gap: 0; flex-shrink: 0;
+    border-bottom: 1px solid var(--line); background: #f7f9fb;
+}
+.sheet-tabs-wrap .sheet-nav {
+    flex-shrink: 0; width: 1.65rem; border: none; background: transparent;
+    color: var(--muted); cursor: pointer; font-size: 1rem; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: inherit; padding: 0;
+}
+.sheet-tabs-wrap .sheet-nav:hover { background: #e8edf2; color: var(--accent); }
+.sheet-tabs-wrap .sheet-nav:disabled {
+    opacity: 0.35; cursor: default; background: transparent;
+}
+.sheet-viewer .sheet-tabs {
+    display: flex; gap: 0; flex: 1; min-width: 0;
+    overflow-x: auto; overflow-y: hidden; flex-wrap: nowrap;
+    scrollbar-width: none; -ms-overflow-style: none;
+}
+.sheet-viewer .sheet-tabs::-webkit-scrollbar { display: none; height: 0; }
+.sheet-viewer .sheet-tab {
+    border: none; border-right: 1px solid #e8edf2; background: transparent;
+    color: var(--muted); font-size: 0.75rem; font-family: inherit;
+    padding: 0.4em 0.75em; cursor: pointer; flex-shrink: 0;
+    white-space: nowrap; max-width: 10rem;
+    overflow: hidden; text-overflow: ellipsis;
+}
+.sheet-viewer .sheet-tab:hover { background: #eef1f4; color: var(--text); }
+.sheet-viewer .sheet-tab.active {
+    background: #fff; color: var(--accent); font-weight: 650;
+    box-shadow: inset 0 -2px 0 var(--accent);
+}
+.sheet-viewer .sheet-body {
+    flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
+}
+.sheet-viewer .sheet-scroll {
+    overflow: auto; flex: 1; min-height: 0; width: 100%;
+    background: #fff; border: none; border-radius: 0;
+    /* 保证无论内容多高，横条始终在可视区底部 */
+    overscroll-behavior: contain;
+}
+.sheet-viewer .sheet-table {
+    border-collapse: collapse; width: max-content; min-width: 100%; margin: 0;
+    font-size: 0.72rem; line-height: 1.25;
+}
+.sheet-viewer .sheet-table th,
+.sheet-viewer .sheet-table td {
+    border: 1px solid #e4e9ef; padding: 0.12em 0.4em;
+    white-space: nowrap; max-width: 14rem;
+    overflow: hidden; text-overflow: ellipsis; vertical-align: middle;
+}
+.sheet-viewer .sheet-table th {
+    background: #eef2f6; font-weight: 650; position: sticky; top: 0; z-index: 1;
+}
+.sheet-viewer .sheet-table tbody tr:nth-child(even) td { background: #fafbfc; }
+.sheet-viewer .sheet-table tbody tr:hover td { background: #eef5ff; }
+.sheet-viewer .sheet-empty { color: var(--muted); padding: 1.5rem; text-align: center; font-size: 0.85rem; }
+.sheet-viewer .sheet-meta {
+    font-size: 0.72rem; color: var(--warn); margin: 0; padding: 0.25rem 0.5rem;
+    background: #fff8e8; border-bottom: 1px solid #f0e0b8;
+}
 @media (max-width: 720px) {
     .modal.modal-history { width: 94vw; height: 88vh; }
     .modal.modal-history .hist-body { flex-direction: column; }
@@ -779,13 +887,14 @@ header .btn-refresh .ico-svg { width: 0.85rem; height: 0.85rem; opacity: 0.95; }
 <script src="/static/jszip.min.js"></script>
 <script src="/static/marked.min.js"></script>
 <script src="/static/docx-preview.min.js"></script>
+<script src="/static/xlsx.full.min.js"></script>
 </head>
 <body>
 <header>
     <div class="brand">
         <h1>DocVM</h1>
         <span class="head-badge" id="headBadge">HEAD r0</span>
-        <button type="button" class="btn btn-refresh" onclick="refresh()" title="刷新工作副本状态">
+        <button type="button" class="btn btn-refresh" onclick="refresh()" title="刷新工作区状态">
             <svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
             刷新
         </button>
@@ -827,7 +936,7 @@ header .btn-refresh .ico-svg { width: 0.85rem; height: 0.85rem; opacity: 0.95; }
             <div class="meta"></div><div class="status"></div>
         </div>
         <div class="file-list" id="fileList">
-            <div class="empty-list">暂无文件，点击「上传」添加到工作副本</div>
+            <div class="empty-list">暂无文件，点击「上传」添加到工作区</div>
         </div>
         <div class="file-actions">
             <span class="hint" id="selHint">选文件预览 · 有改动后点「提交」</span>
@@ -884,8 +993,8 @@ header .btn-refresh .ico-svg { width: 0.85rem; height: 0.85rem; opacity: 0.95; }
     <span class="foot-msg" id="statusBar">就绪</span>
     <span class="foot-sep"></span>
     <div class="path-item">
-        <span class="path-label">工作副本</span>
-        <a class="path-link empty" id="workDirLink" title="点击打开工作副本">—</a>
+        <span class="path-label">工作区</span>
+        <a class="path-link empty" id="workDirLink" title="点击打开工作区">—</a>
     </div>
     <div class="path-item">
         <span class="path-label">变更包</span>
@@ -924,7 +1033,7 @@ header .btn-refresh .ico-svg { width: 0.85rem; height: 0.85rem; opacity: 0.95; }
 <div class="modal-overlay" id="commitModal">
     <div class="modal modal-commit">
         <h2>提交修订</h2>
-        <div class="commit-summary" id="pendingSummary">正在检查工作副本变更…</div>
+        <div class="commit-summary" id="pendingSummary">正在检查工作区变更…</div>
         <div class="change-box" id="pendingChanges"></div>
         <textarea id="noteInput" placeholder="提交说明：例如「修订第三章」「上传覆盖合同稿」"></textarea>
         <div class="actions" style="align-items:center">
@@ -1444,7 +1553,7 @@ function renderTree(nodes, depth) {
     let html = '';
     (nodes || []).forEach(n => {
         const isDir = n.type === 'dir';
-        const pad = 0.5 + depth * 1;
+        const pad = 0.35 + depth * 0.85;
         if (isDir && expandedDirs[n.path] === undefined) expandedDirs[n.path] = true;
         const expanded = isDir ? !!expandedDirs[n.path] : false;
         const twist = isDir ? (expanded ? '▼' : '▶') : '';
@@ -1836,8 +1945,12 @@ function previewFile(name) {
     if (sub) sub.textContent = name || '选中文件后显示';
     previewCurrentFile = name || '';
     resetPreviewTransform();
-    if (vp) vp.classList.remove('pdf-mode');
+    if (vp) {
+        vp.classList.remove('pdf-mode');
+        vp.classList.remove('sheet-mode');
+    }
     el.classList.remove('pdf-mode');
+    el.classList.remove('sheet-mode');
     showPreviewToolbar(false);
     el.innerHTML = '<div class="preview-loading"><div class="spinner"></div><div>正在加载预览...</div></div>';
     api('preview?name=' + encodeURIComponent(name), 'GET', null, d => {
@@ -1847,6 +1960,11 @@ function previewFile(name) {
         } else if (d.type === 'markdown') {
             showPreviewToolbar(true);
             renderMarkdown(name, el);
+        } else if (d.type === 'spreadsheet') {
+            showPreviewToolbar(true);
+            if (vp) vp.classList.add('sheet-mode');
+            el.classList.add('sheet-mode');
+            renderSpreadsheet(name, el);
         } else if (d.type === 'image') {
             showPreviewToolbar(true);
             el.innerHTML = '<img class="preview-image" src="/api/raw?file=' +
@@ -1902,6 +2020,167 @@ document.addEventListener('click', function(e) {
     const p = btn.getAttribute('data-dl-path');
     if (p) downloadWorkspaceFile(p);
 });
+
+const SHEET_PREVIEW_MAX_ROWS = 500;
+const SHEET_PREVIEW_MAX_COLS = 40;
+
+function openWithSystemApp(path) {
+    if (!path) return;
+    showLoading('正在用系统程序打开…');
+    api('edit', 'POST', {name: path}, d => {
+        hideLoading();
+        if (d.ok) showToast(d.msg || '已打开', 'success');
+        else showToast(d.msg || '打开失败', 'error');
+    }, () => { hideLoading(); showToast('打开失败', 'error'); });
+}
+
+function sheetAoAToHtml(aoa, truncated) {
+    if (!aoa || !aoa.length) {
+        return '<div class="sheet-empty">空表</div>';
+    }
+    let maxCols = 0;
+    aoa.forEach(function(row) {
+        if (row && row.length > maxCols) maxCols = row.length;
+    });
+    let html = '<table class="sheet-table"><thead><tr>';
+    const header = aoa[0] || [];
+    for (let c = 0; c < maxCols; c++) {
+        const v = header[c] == null ? '' : header[c];
+        html += '<th>' + esc(String(v)) + '</th>';
+    }
+    html += '</tr></thead><tbody>';
+    for (let r = 1; r < aoa.length; r++) {
+        const row = aoa[r] || [];
+        html += '<tr>';
+        for (let c = 0; c < maxCols; c++) {
+            const v = row[c] == null ? '' : row[c];
+            html += '<td title="' + esc(String(v)) + '">' + esc(String(v)) + '</td>';
+        }
+        html += '</tr>';
+    }
+    html += '</tbody></table>';
+    if (truncated) {
+        html = '<p class="sheet-meta">已截断预览（最多 ' + SHEET_PREVIEW_MAX_ROWS +
+            ' 行 / ' + SHEET_PREVIEW_MAX_COLS + ' 列）。完整内容请「用 Excel 打开」。</p>' + html;
+    }
+    return html;
+}
+
+function renderSheetBody(wb, sheetName, bodyEl) {
+    const ws = wb.Sheets[sheetName];
+    if (!ws) {
+        bodyEl.innerHTML = '<div class="sheet-empty">工作表不存在</div>';
+        return;
+    }
+    let truncated = false;
+    let range = null;
+    try {
+        if (ws['!ref']) range = XLSX.utils.decode_range(ws['!ref']);
+    } catch (e) { range = null; }
+    let opts = { header: 1, defval: '', raw: false };
+    if (range) {
+        const er = Math.min(range.e.r, range.s.r + SHEET_PREVIEW_MAX_ROWS - 1);
+        const ec = Math.min(range.e.c, range.s.c + SHEET_PREVIEW_MAX_COLS - 1);
+        if (er < range.e.r || ec < range.e.c) truncated = true;
+        opts.range = { s: range.s, e: { r: er, c: ec } };
+    }
+    const aoa = XLSX.utils.sheet_to_json(ws, opts);
+    bodyEl.innerHTML = '<div class="sheet-scroll">' + sheetAoAToHtml(aoa, truncated) + '</div>';
+}
+
+function bindSheetTabNav(wrap) {
+    if (!wrap) return;
+    const tabs = wrap.querySelector('.sheet-tabs');
+    const prev = wrap.querySelector('.sheet-nav-prev');
+    const next = wrap.querySelector('.sheet-nav-next');
+    if (!tabs || !prev || !next) return;
+
+    function updateNav() {
+        const max = Math.max(0, tabs.scrollWidth - tabs.clientWidth - 1);
+        const need = tabs.scrollWidth > tabs.clientWidth + 2;
+        prev.disabled = !need || tabs.scrollLeft <= 1;
+        next.disabled = !need || tabs.scrollLeft >= max;
+        prev.style.visibility = need ? 'visible' : 'hidden';
+        next.style.visibility = need ? 'visible' : 'hidden';
+    }
+
+    prev.addEventListener('click', function() {
+        tabs.scrollBy({ left: -160, behavior: 'smooth' });
+    });
+    next.addEventListener('click', function() {
+        tabs.scrollBy({ left: 160, behavior: 'smooth' });
+    });
+    tabs.addEventListener('scroll', updateNav, { passive: true });
+    window.addEventListener('resize', updateNav);
+    updateNav();
+    setTimeout(updateNav, 50);
+    return updateNav;
+}
+
+function renderSpreadsheet(name, container) {
+    if (typeof XLSX === 'undefined') {
+        container.innerHTML = '<div class="preview-empty">表格预览库未加载</div>';
+        return;
+    }
+    container.innerHTML = '<div class="preview-loading"><div class="spinner"></div><div>正在解析表格…</div></div>';
+    fetch('/api/raw?file=' + encodeURIComponent(name))
+        .then(function(r) {
+            if (!r.ok) throw new Error('读取失败 HTTP ' + r.status);
+            return r.arrayBuffer();
+        })
+        .then(function(buf) {
+            const wb = XLSX.read(new Uint8Array(buf), { type: 'array', cellDates: true });
+            const sheets = wb.SheetNames || [];
+            if (!sheets.length) {
+                container.innerHTML = '<div class="preview-empty">工作簿无工作表</div>';
+                return;
+            }
+            let tabs = '';
+            sheets.forEach(function(sn, i) {
+                tabs += '<button type="button" class="sheet-tab' + (i === 0 ? ' active' : '') +
+                    '" data-sheet="' + esc(sn) + '" title="' + esc(sn) + '">' + esc(sn) + '</button>';
+            });
+            container.innerHTML =
+                '<div class="sheet-viewer">' +
+                    '<div class="sheet-tabs-wrap">' +
+                        '<button type="button" class="sheet-nav sheet-nav-prev" title="向左" aria-label="向左">‹</button>' +
+                        '<div class="sheet-tabs">' + tabs + '</div>' +
+                        '<button type="button" class="sheet-nav sheet-nav-next" title="向右" aria-label="向右">›</button>' +
+                    '</div>' +
+                    '<div class="sheet-body"></div>' +
+                '</div>';
+            const wrap = container.querySelector('.sheet-tabs-wrap');
+            const tabsEl = container.querySelector('.sheet-tabs');
+            const bodyEl = container.querySelector('.sheet-body');
+            const updateNav = bindSheetTabNav(wrap);
+            renderSheetBody(wb, sheets[0], bodyEl);
+            container.querySelectorAll('.sheet-tab').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    container.querySelectorAll('.sheet-tab').forEach(function(b) {
+                        b.classList.toggle('active', b === btn);
+                    });
+                    renderSheetBody(wb, btn.getAttribute('data-sheet'), bodyEl);
+                    try { btn.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' }); } catch (e) {}
+                    if (updateNav) setTimeout(updateNav, 80);
+                });
+            });
+            if (tabsEl && tabsEl.firstElementChild) {
+                try { tabsEl.firstElementChild.scrollIntoView({ inline: 'nearest', block: 'nearest' }); } catch (e) {}
+            }
+        })
+        .catch(function(err) {
+            container.innerHTML = '<div class="preview-empty">表格预览失败: ' +
+                esc(err && err.message ? err.message : String(err)) +
+                '<div style="margin-top:0.75rem"><button type="button" class="btn btn-primary" data-open-sys="' +
+                esc(name) + '">用 Excel 打开</button></div></div>';
+            const openBtn = container.querySelector('[data-open-sys]');
+            if (openBtn) {
+                openBtn.addEventListener('click', function() {
+                    openWithSystemApp(name);
+                });
+            }
+        });
+}
 
 function renderDocx(name, container) {
     fetch('/api/raw?file=' + encodeURIComponent(name))
@@ -2126,9 +2405,9 @@ function showItemDetail() {
         cards += '<div class="detail-card"><div class="k">修改时间</div><div class="v">' + esc(time || '—') + '</div></div>';
         cards += '<div class="detail-card span-2"><div class="k">版本状态</div><div class="v">' + esc(status || '—') + '</div></div>';
     } else if (sel.path !== '') {
-        cards += '<div class="detail-card span-2"><div class="k">说明</div><div class="v">工作副本内的文件夹</div></div>';
+        cards += '<div class="detail-card span-2"><div class="k">说明</div><div class="v">工作区内的文件夹</div></div>';
     } else {
-        cards += '<div class="detail-card span-2"><div class="k">说明</div><div class="v">工作副本根目录</div></div>';
+        cards += '<div class="detail-card span-2"><div class="k">说明</div><div class="v">工作区根目录</div></div>';
     }
     document.getElementById('detailBody').innerHTML = '<div class="detail-grid">' + cards + '</div>';
     document.getElementById('detailModal').classList.add('show');
@@ -2537,7 +2816,7 @@ function showCommitModal() {
         showToast('没有需要提交的变更', 'error');
         return;
     }
-    document.getElementById('pendingSummary').textContent = '正在检查工作副本变更…';
+    document.getElementById('pendingSummary').textContent = '正在检查工作区变更…';
     document.getElementById('pendingChanges').innerHTML = '';
     document.getElementById('saveVersionBtn').disabled = true;
     document.getElementById('commitModal').classList.add('show');
@@ -2551,7 +2830,7 @@ function showHistoryModal() {
 }
 
 function loadCommitPanel() {
-    document.getElementById('pendingSummary').textContent = '正在检查工作副本变更…';
+    document.getElementById('pendingSummary').textContent = '正在检查工作区变更…';
     document.getElementById('pendingChanges').innerHTML = '';
     document.getElementById('saveVersionBtn').disabled = true;
     api('pending_changes', 'GET', null, d => {
@@ -2561,7 +2840,7 @@ function loadCommitPanel() {
             return;
         }
         if (!d.has_changes) {
-            document.getElementById('pendingSummary').textContent = '工作副本干净，没有需要提交的变更';
+            document.getElementById('pendingSummary').textContent = '工作区干净，没有需要提交的变更';
             document.getElementById('pendingChanges').innerHTML = '<div class="change-empty">与 HEAD 一致</div>';
             document.getElementById('saveVersionBtn').disabled = true;
             return;
@@ -2673,14 +2952,14 @@ function selectHistoryRev(ver) {
     html += renderGroupedChanges(changes, v.version);
     html += '<div class="hist-detail-actions">' +
         '<button type="button" class="btn btn-danger" onclick="doRollback(' + v.version + ')">回滚到此修订</button>' +
-        '<span style="font-size:var(--fs-sm);color:var(--muted);align-self:center">将覆盖工作副本中未提交的修改</span>' +
+        '<span style="font-size:var(--fs-sm);color:var(--muted);align-self:center">将覆盖工作区中未提交的修改</span>' +
         '</div>';
     html += '</div>';
     detail.innerHTML = html;
 }
 
 function doRollback(ver) {
-    if (confirm('确定将工作副本恢复到修订 r' + ver + ' 吗？\n未提交修改将被覆盖。')) {
+    if (confirm('确定将工作区恢复到修订 r' + ver + ' 吗？\n未提交修改将被覆盖。')) {
         showLoading('正在恢复到 r' + ver + '…');
         api('rollback', 'POST', {version: ver}, d => {
             hideLoading();

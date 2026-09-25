@@ -325,6 +325,9 @@ class VersionManager:
             }
         if ext == ".md":
             return {"type": "markdown", "name": base, "ext": ext, "size": size}
+        if ext in (".csv", ".xlsx", ".xls"):
+            # 前端 SheetJS 解析，支持多工作表 Tab
+            return {"type": "spreadsheet", "name": base, "ext": ext, "size": size}
         if ext in (".txt", ".log"):
             try:
                 with open(fpath, "r", encoding="utf-8") as f:
