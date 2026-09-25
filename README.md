@@ -21,19 +21,33 @@
 - Word / Markdown / 图片等预览（缩放、旋转、全屏）
 - 系统托盘驻留；再次启动仅打开浏览器（单实例）
 
-## 快速开始
+## 离线使用（推荐：exe）
+
+**不需要安装 Python，也不需要联网、执行 `pip`。**
+
+1. 在有网络的机器上打包出 `dist\DocVersionManager.exe`（见下方「打包 exe」），或直接使用已打好的 exe  
+2. 把 **单个 exe** 拷到离线电脑任意目录  
+3. 双击运行 → 托盘驻留，并自动打开本机页面 [http://127.0.0.1:404](http://127.0.0.1:404)  
+4. 数据写在 **exe 同目录** 的 `.docvm/`（工作副本、版本库都在这里，可整夹备份/拷走）
+
+说明：
+
+- 再次双击 exe：若已在运行，只会再打开浏览器，不会起第二个服务  
+- 结束：托盘图标 →「结束运行」  
+- Word→PDF 高级预览依赖本机是否安装 Microsoft Word；一般 docx/Markdown/图片预览不依赖外网  
+- 浏览器仍建议本机有 Edge/Chrome（打开的是本机 `127.0.0.1`，不访问公网）
+
+## 从源码运行（开发用）
+
+仅在改代码、调试时需要：
 
 ```bash
 pip install -r requirements.txt
 python main.py
 ```
 
-启动后驻留**系统托盘**（打开浏览器 / 结束运行），并自动打开 [http://127.0.0.1:404](http://127.0.0.1:404)。
-
-> Windows 上若 `pip` 访问官方 PyPI 出现 SSL 错误，可改用镜像，例如：
+> 这与离线部署无关。若本机 `pip` 访问官方 PyPI 报 SSL 错，可临时用镜像：  
 > `pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/`
-
-
 
 ## 目录结构
 
