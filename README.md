@@ -8,6 +8,10 @@
 
 详细设计见 [技术文档](docs/技术文档.md)。
 
+## 界面预览
+
+![DocVM 主界面](docs/assets/screenshot-main.png)
+
 ## 功能概览
 
 - 工作副本管理（上传、目录、移动、删除、搜索筛选）
@@ -28,6 +32,8 @@ python main.py
 
 > Windows 上若 `pip` 访问官方 PyPI 出现 SSL 错误，可改用镜像，例如：
 > `pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/`
+
+
 
 ## 目录结构
 
@@ -56,13 +62,17 @@ doc-version-manager/
 
 运行后数据落在软件同目录 `.docvm/`：
 
-| 路径 | 说明 |
-|------|------|
-| `workspace/` | 工作副本（编辑/上传） |
-| `objects/` | 内容寻址存储（相同文件不重复） |
-| `revs/` | 修订元数据 |
-| `ignore.txt` | 忽略规则 |
-| `backups/` | 本修订变更文件的小包 |
+
+| 路径           | 说明              |
+| ------------ | --------------- |
+| `workspace/` | 工作副本（编辑/上传）     |
+| `objects/`   | 内容寻址存储（相同文件不重复） |
+| `revs/`      | 修订元数据           |
+| `ignore.txt` | 忽略规则            |
+| `backups/`   | 本修订变更文件的小包      |
+
+
+
 
 ## 打包 exe
 
@@ -78,6 +88,8 @@ scripts\build.bat
 - pywin32 — Word COM 转 PDF（可选，需安装 Microsoft Word）
 - pystray / Pillow — 系统托盘
 - pyinstaller — 打包
+
+
 
 ## 贡献
 
