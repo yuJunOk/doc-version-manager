@@ -1265,8 +1265,6 @@ header .btn-refresh .ico-svg { width: 0.85rem; height: 0.85rem; opacity: 0.95; }
 </div>
 
 <div class="ctx-menu" id="ptabCtxMenu">
-    <button data-ptab-act="history">查看历史</button>
-    <div class="sep"></div>
     <button data-ptab-act="close">关闭</button>
     <button data-ptab-act="close-others">关闭其他</button>
     <button data-ptab-act="close-all">关闭全部</button>
@@ -2512,13 +2510,7 @@ function hidePtabCtxMenu() {
 function ptabCtxAction(act, path) {
     const target = path || ptabCtxPath;
     hidePtabCtxMenu();
-    if (!act) return;
-    if (act === 'history') {
-        const info = parsePreviewKey(target);
-        if (info.path) showPathHistory(info.path, false);
-        return;
-    }
-    if (!target) return;
+    if (!act || !target) return;
     if (act === 'close') closePreviewTab(target);
     else if (act === 'close-others') closeOtherPreviewTabs(target);
     else if (act === 'close-all') closeAllPreviewTabs();
