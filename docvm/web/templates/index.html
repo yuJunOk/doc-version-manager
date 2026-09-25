@@ -355,8 +355,6 @@ header .btn-refresh .ico-svg { width: 0.85rem; height: 0.85rem; opacity: 0.95; }
     border: none; border-radius: 0;
     box-shadow: none;
 }
-/* version-cluster unused */
-
 /* 预览操作：右侧紧凑工具条 */
 .preview-ops {
     display: none; align-items: center; gap: 0.1rem; flex-shrink: 0;
@@ -408,19 +406,102 @@ header .btn-refresh .ico-svg { width: 0.85rem; height: 0.85rem; opacity: 0.95; }
     background: #fff; color: var(--header);
 }
 .preview-viewport {
-    flex: 1; min-height: 0; overflow: auto; background: #fafbfc;
+    flex: 1; min-height: 0; overflow: hidden; background: #fafbfc;
     position: relative;
 }
+/* 多文件预览标签：尽量薄，把高度留给内容 */
+.preview-tabs-wrap {
+    display: flex; align-items: stretch; flex-shrink: 0;
+    height: 1.7rem; background: #eef2f6; border-bottom: 1px solid var(--line);
+}
+.preview-tabs-wrap[hidden] { display: none !important; }
+.preview-tabs-wrap .ptab-nav {
+    flex-shrink: 0; width: 1.4rem; border: none; background: transparent;
+    color: var(--muted); cursor: pointer; font-size: 0.95rem; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: inherit; padding: 0;
+}
+.preview-tabs-wrap .ptab-nav:hover { background: #e2e8ef; color: var(--accent); }
+.preview-tabs-wrap .ptab-nav:disabled { opacity: 0.3; cursor: default; background: transparent; }
+.preview-tabs {
+    display: flex; flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden;
+    scrollbar-width: none; -ms-overflow-style: none;
+}
+.preview-tabs::-webkit-scrollbar { display: none; height: 0; }
+.preview-tab {
+    flex-shrink: 0; display: inline-flex; align-items: center; gap: 0.25rem;
+    max-width: 9.5rem; height: 100%;
+    padding: 0 0.2rem 0 0.55rem; border: none; border-right: 1px solid #e0e6ec;
+    background: transparent; color: var(--muted); cursor: grab;
+    font-size: 0.72rem; font-family: inherit; line-height: 1;
+    user-select: none; -webkit-user-select: none;
+}
+.preview-tab:hover { background: #e4ebf2; color: var(--text); }
+.preview-tab.active {
+    background: #fff; color: var(--accent); font-weight: 650;
+    box-shadow: inset 0 -2px 0 var(--accent);
+}
+.preview-tab.dragging { opacity: 0.45; cursor: grabbing; }
+.preview-tab.drag-over-left { box-shadow: inset 2px 0 0 var(--accent); }
+.preview-tab.drag-over-right { box-shadow: inset -2px 0 0 var(--accent); }
+.preview-tab .ptab-name {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+    pointer-events: none;
+}
+.preview-tab .ptab-close {
+    flex-shrink: 0; width: 1.05rem; height: 1.05rem; border: none; border-radius: 0.2rem;
+    background: transparent; color: var(--muted); cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; line-height: 1; padding: 0;
+}
+.preview-tab .ptab-close:hover { background: #d8dee6; color: var(--danger); }
+.preview-tab.active .ptab-close:hover { background: #eceff3; }
+.work-panel.fullscreen .preview-tabs-wrap { background: #17324f; border-bottom-color: rgba(255,255,255,0.12); }
+.work-panel.fullscreen .preview-tab { color: rgba(255,255,255,0.7); border-right-color: rgba(255,255,255,0.1); }
+.work-panel.fullscreen .preview-tab:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.work-panel.fullscreen .preview-tab.active {
+    background: #1e3a5f; color: #fff; box-shadow: inset 0 -2px 0 #7eb0ff;
+}
+.work-panel.fullscreen .preview-tab.drag-over-left { box-shadow: inset 2px 0 0 #7eb0ff; }
+.work-panel.fullscreen .preview-tab.drag-over-right { box-shadow: inset -2px 0 0 #7eb0ff; }
+.work-panel.fullscreen .ptab-nav { color: rgba(255,255,255,0.75); }
+.work-panel.fullscreen .ptab-nav:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.ctx-menu button:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
 .preview-stage {
     transform-origin: center top;
     transition: transform 0.15s ease;
-    min-height: 100%;
+    height: 100%; min-height: 100%;
+    display: flex; flex-direction: column;
 }
 .preview-stage.no-anim { transition: none; }
 .preview-content {
-    /* 内容区：由 viewport 滚动；保留原排版样式挂在 stage 内 */
-    padding: 1.25rem 5%;
+    /* 多标签保活容器：各 pane 自己滚动，切走不销毁 */
+    flex: 1; min-height: 0; height: 100%;
+    padding: 0; position: relative;
     font-size: 0.9rem; line-height: 1.75; color: var(--text); background: #fafbfc;
+    overflow: hidden;
+}
+.preview-pane {
+    display: none;
+    height: 100%;
+    overflow: auto;
+    padding: 1.25rem 5%;
+    box-sizing: border-box;
+}
+.preview-pane.is-active { display: block; }
+.preview-pane.is-empty {
+    display: none;
+    align-items: center; justify-content: center;
+}
+.preview-pane.is-empty.is-active { display: flex; }
+.preview-pane.sheet-mode {
+    padding: 0; background: #fff;
+    overflow: hidden;
+    flex-direction: column;
+}
+.preview-pane.sheet-mode.is-active { display: flex; }
+.preview-pane.pdf-mode {
+    padding: 0; overflow: hidden; background: #525659;
 }
 /* 表格：锁定可视高度，横/竖滚动条都在预览窗边缘，不用滚到底才看到横条 */
 .preview-viewport.sheet-mode {
@@ -805,7 +886,7 @@ header .btn-refresh .ico-svg { width: 0.85rem; height: 0.85rem; opacity: 0.95; }
     margin: 0.5em 0; color: #666; background: #f9f9f9;
 }
 .preview-content .docx-wrapper {
-    background: #e8e8e8; padding: 1rem; min-height: 100%; overflow-y: auto;
+    background: #e8e8e8; padding: 1rem; min-height: 100%;
 }
 .preview-content .docx-wrapper > .docx {
     margin: 0 auto 1rem; box-shadow: 0 0.15rem 0.5rem rgba(0,0,0,0.12); background: white;
@@ -939,7 +1020,7 @@ header .btn-refresh .ico-svg { width: 0.85rem; height: 0.85rem; opacity: 0.95; }
             <div class="empty-list">暂无文件，点击「上传」添加到工作区</div>
         </div>
         <div class="file-actions">
-            <span class="hint" id="selHint">选文件预览 · 有改动后点「提交」</span>
+            <span class="hint" id="selHint">选文件预览（可多开标签）· 有改动后点「提交」</span>
         </div>
     </div>
     <div class="splitter" id="splitter"></div>
@@ -949,7 +1030,7 @@ header .btn-refresh .ico-svg { width: 0.85rem; height: 0.85rem; opacity: 0.95; }
                 <button type="button" class="btn btn-fullscreen" id="previewFsBtn" onclick="togglePreviewFullscreen()" title="全屏预览 (Esc 退出)" aria-label="全屏预览">
                     <svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
                 </button>
-                <span class="title">预览<span class="sub" id="previewSub">选中文件后显示</span></span>
+                <span class="title">预览</span>
             </div>
             <span class="header-actions">
                 <span class="preview-ops" id="previewToolbar">
@@ -977,11 +1058,19 @@ header .btn-refresh .ico-svg { width: 0.85rem; height: 0.85rem; opacity: 0.95; }
                 </span>
             </span>
         </div>
+        <div class="preview-tabs-wrap" id="previewTabsWrap" hidden>
+            <button type="button" class="ptab-nav ptab-nav-prev" title="向左" aria-label="向左">‹</button>
+            <div class="preview-tabs" id="previewTabs"></div>
+            <button type="button" class="ptab-nav ptab-nav-next" title="向右" aria-label="向右">›</button>
+        </div>
         <div class="preview-viewport" id="previewViewport">
             <div class="preview-stage" id="previewStage">
                 <div class="preview-content" id="previewContent">
-                    <div class="preview-empty">
-                        <div>在左侧选择文件预览</div>
+                    <div class="preview-pane is-empty is-active" data-preview-empty="1">
+                        <div class="preview-empty">
+                            <div>在左侧选择文件预览</div>
+                            <div class="flow">可同时打开多个文件，用上方标签切换</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1110,6 +1199,12 @@ header .btn-refresh .ico-svg { width: 0.85rem; height: 0.85rem; opacity: 0.95; }
     <button data-act="delete" style="color:#c0392b">删除</button>
 </div>
 
+<div class="ctx-menu" id="ptabCtxMenu">
+    <button data-ptab-act="close">关闭</button>
+    <button data-ptab-act="close-others">关闭其他</button>
+    <button data-ptab-act="close-all">关闭全部</button>
+</div>
+
 <div class="toast" id="toast"></div>
 <div class="global-loading" id="globalLoading">
     <div class="spinner"></div>
@@ -1236,6 +1331,11 @@ function refresh() {
             setPathLink(document.getElementById('ignoreLink'), null, 'ignore');
             document.getElementById('statsInfo').textContent = '';
             document.getElementById('fileList').innerHTML = '<div class="empty-list">工作区未就绪</div>';
+            previewTabs = [];
+            previewActivePath = '';
+            clearAllPreviewPanes();
+            renderPreviewTabBar();
+            showPreviewEmptyState();
             applyPendingToToolbar(null);
             hideLoading();
             return;
@@ -1260,8 +1360,18 @@ function refresh() {
 }
 
 function reloadPreviewIfNeeded() {
-    const sel = primarySelection();
-    if (sel.type === 'file' && sel.path) previewFile(sel.path);
+    prunePreviewTabs(collectExistingFilePaths());
+    if (previewActivePath) {
+        previewFile(previewActivePath);
+    }
+}
+
+function collectExistingFilePaths() {
+    const paths = [];
+    document.querySelectorAll('#fileList .tree-row[data-type="file"]').forEach(function(el) {
+        if (el.dataset.path) paths.push(el.dataset.path);
+    });
+    return paths;
 }
 
 /** 静默刷新：只更新状态栏/树状态，绝不重载预览（避免闪烁） */
@@ -1351,6 +1461,7 @@ function patchTreeStatuses(tree) {
             if (!found) delete selectedMap[p];
         });
         applySelectionHighlight();
+        prunePreviewTabs(collectExistingFilePaths());
     }
 }
 
@@ -1545,6 +1656,7 @@ function loadFiles(done) {
             }
         });
         applySelectionHighlight();
+        prunePreviewTabs(collectExistingFilePaths());
         if (done) done();
     }, () => { if (done) done(); showToast('加载文件列表失败', 'error'); });
 }
@@ -1672,20 +1784,9 @@ function handleRowClick(path, type, e) {
     } else {
         setSingleSelection(path, type);
         if (type === 'file') {
-            document.getElementById('previewSub').textContent = path;
-            previewFile(path);
-        } else {
-            document.getElementById('previewSub').textContent = '/' + (path || '');
-            hidePreviewToolbar();
-            resetPreviewTransform();
-            const el = document.getElementById('previewContent');
-            const vp = document.getElementById('previewViewport');
-            if (vp) vp.classList.remove('pdf-mode');
-            el.classList.remove('pdf-mode');
-            el.innerHTML = '<div class="preview-empty">' +
-                '<div>已选文件夹 /' + esc(path) + '</div>' +
-                '<div class="flow">可在此上传、新建子文件夹；整库变更请用工具栏「提交」</div></div>';
+            openPreviewTab(path);
         }
+        // 选中文件夹时不打断已打开的预览标签
     }
     hideCtxMenu();
 }
@@ -1856,7 +1957,494 @@ function togglePreviewFullscreen() {
 
 let previewZoomScale = 1;
 let previewRotateDeg = 0;
-let previewCurrentFile = '';
+let previewTabs = []; // [{path, title}]
+let previewActivePath = '';
+let previewLoadSeq = 0;
+const PREVIEW_TAB_MAX = 12;
+let ptabDragPath = null;
+let ptabCtxPath = '';
+let ptabCtxIgnoreClick = false;
+/** 每个已打开文件的加载序号，用于忽略过期异步回调 */
+let previewLoadIds = {};
+/** 每个 pane 的缩放/旋转（切 tab 时各自保留） */
+let previewPaneView = {}; // path -> {zoom, rotate}
+
+function previewTabTitle(path) {
+    const parts = String(path || '').replace(/\\/g, '/').split('/').filter(Boolean);
+    return parts.length ? parts[parts.length - 1] : (path || '未命名');
+}
+
+function invalidatePreviewLoad(path) {
+    if (!path) return;
+    previewLoadIds[path] = -1;
+}
+
+function getPreviewHost() {
+    return document.getElementById('previewContent');
+}
+
+function findPreviewPane(path) {
+    const host = getPreviewHost();
+    if (!host || !path) return null;
+    try {
+        return host.querySelector('.preview-pane[data-path="' + CSS.escape(path) + '"]');
+    } catch (err) {
+        const panes = host.querySelectorAll('.preview-pane[data-path]');
+        for (let i = 0; i < panes.length; i++) {
+            if (panes[i].getAttribute('data-path') === path) return panes[i];
+        }
+        return null;
+    }
+}
+
+function ensurePreviewPane(path) {
+    let pane = findPreviewPane(path);
+    if (pane) return pane;
+    const host = getPreviewHost();
+    if (!host || !path) return null;
+    pane = document.createElement('div');
+    pane.className = 'preview-pane';
+    pane.setAttribute('data-path', path);
+    host.appendChild(pane);
+    return pane;
+}
+
+function destroyPreviewPane(path) {
+    const pane = findPreviewPane(path);
+    if (pane && pane.parentNode) pane.parentNode.removeChild(pane);
+    delete previewPaneView[path];
+    invalidatePreviewLoad(path);
+}
+
+function clearAllPreviewPanes() {
+    const host = getPreviewHost();
+    if (host) {
+        host.querySelectorAll('.preview-pane[data-path]').forEach(function(p) {
+            p.parentNode.removeChild(p);
+        });
+    }
+    previewPaneView = {};
+    previewLoadIds = {};
+}
+
+function getPreviewContainer(name, loadId) {
+    if (!name || previewLoadIds[name] !== loadId) return null;
+    return ensurePreviewPane(name);
+}
+
+function markPaneReady(container, withToolbar) {
+    if (!container) return;
+    container.dataset.loaded = '1';
+    container.dataset.toolbar = withToolbar ? '1' : '0';
+}
+
+function applyPreviewChrome(name, loadId, opts) {
+    if (!name || previewLoadIds[name] !== loadId) return;
+    opts = opts || {};
+    const pane = ensurePreviewPane(name);
+    if (!pane) return;
+    pane.classList.toggle('pdf-mode', !!opts.pdfMode);
+    pane.classList.toggle('sheet-mode', !!opts.sheetMode);
+    pane.dataset.toolbar = opts.toolbar ? '1' : '0';
+    if (previewActivePath === name) syncViewportChrome(pane, !!opts.toolbar);
+}
+
+function syncViewportChrome(pane, toolbar) {
+    const vp = document.getElementById('previewViewport');
+    const host = getPreviewHost();
+    const pdf = !!(pane && pane.classList.contains('pdf-mode'));
+    const sheet = !!(pane && pane.classList.contains('sheet-mode'));
+    if (vp) {
+        vp.classList.toggle('pdf-mode', pdf);
+        vp.classList.toggle('sheet-mode', sheet);
+    }
+    if (host) {
+        host.classList.toggle('pdf-mode', pdf);
+        host.classList.toggle('sheet-mode', sheet);
+    }
+    if (toolbar == null && pane) toolbar = pane.dataset.toolbar === '1';
+    showPreviewToolbar(!!toolbar);
+}
+
+function rememberPaneView(path) {
+    if (!path) return;
+    previewPaneView[path] = { zoom: previewZoomScale, rotate: previewRotateDeg };
+}
+
+function restorePaneView(path) {
+    const v = previewPaneView[path];
+    previewZoomScale = v && v.zoom != null ? v.zoom : 1;
+    previewRotateDeg = v && v.rotate != null ? v.rotate : 0;
+    applyPreviewTransform();
+}
+
+function showPreviewPane(path) {
+    const host = getPreviewHost();
+    if (!host) return null;
+    let active = null;
+    host.querySelectorAll('.preview-pane').forEach(function(pane) {
+        const isEmpty = pane.hasAttribute('data-preview-empty');
+        const on = path ? (pane.getAttribute('data-path') === path) : isEmpty;
+        pane.classList.toggle('is-active', on);
+        if (on) active = pane;
+    });
+    if (path && !active) {
+        active = ensurePreviewPane(path);
+        if (active) active.classList.add('is-active');
+        host.querySelectorAll('.preview-pane[data-preview-empty]').forEach(function(p) {
+            p.classList.remove('is-active');
+        });
+    }
+    if (active && path) syncViewportChrome(active);
+    else {
+        const vp = document.getElementById('previewViewport');
+        if (vp) {
+            vp.classList.remove('pdf-mode');
+            vp.classList.remove('sheet-mode');
+        }
+        if (host) {
+            host.classList.remove('pdf-mode');
+            host.classList.remove('sheet-mode');
+        }
+        showPreviewToolbar(false);
+    }
+    return active;
+}
+
+function activatePreviewTab(path, opts) {
+    opts = opts || {};
+    if (!path) return;
+    if (path === previewActivePath && !opts.forceReload) {
+        if (opts.syncSelection) setSingleSelection(path, 'file');
+        return;
+    }
+    rememberPaneView(previewActivePath);
+    previewActivePath = path;
+    renderPreviewTabBar();
+    const pane = showPreviewPane(path);
+    restorePaneView(path);
+    const inFlight = !!(pane && previewLoadIds[path] > 0 && !pane.dataset.loaded);
+    if (opts.forceReload || !pane || (!pane.dataset.loaded && !inFlight)) {
+        previewFile(path);
+    }
+    if (opts.syncSelection) setSingleSelection(path, 'file');
+}
+
+function showPreviewEmptyState() {
+    previewActivePath = '';
+    showPreviewToolbar(false);
+    resetPreviewTransform();
+    const host = getPreviewHost();
+    const vp = document.getElementById('previewViewport');
+    if (vp) {
+        vp.classList.remove('pdf-mode');
+        vp.classList.remove('sheet-mode');
+    }
+    if (host) {
+        host.classList.remove('pdf-mode');
+        host.classList.remove('sheet-mode');
+        let empty = host.querySelector('.preview-pane[data-preview-empty]');
+        if (!empty) {
+            empty = document.createElement('div');
+            empty.className = 'preview-pane is-empty';
+            empty.setAttribute('data-preview-empty', '1');
+            empty.innerHTML = '<div class="preview-empty">' +
+                '<div>在左侧选择文件预览</div>' +
+                '<div class="flow">可同时打开多个文件，用上方标签切换</div></div>';
+            host.appendChild(empty);
+        }
+        host.querySelectorAll('.preview-pane').forEach(function(p) {
+            p.classList.toggle('is-active', p === empty);
+        });
+    }
+}
+
+function updatePreviewTabNav() {
+    const wrap = document.getElementById('previewTabsWrap');
+    if (!wrap || wrap.hidden) return;
+    const tabs = document.getElementById('previewTabs');
+    const prev = wrap.querySelector('.ptab-nav-prev');
+    const next = wrap.querySelector('.ptab-nav-next');
+    if (!tabs || !prev || !next) return;
+    const need = tabs.scrollWidth > tabs.clientWidth + 2;
+    const max = Math.max(0, tabs.scrollWidth - tabs.clientWidth - 1);
+    prev.disabled = !need || tabs.scrollLeft <= 1;
+    next.disabled = !need || tabs.scrollLeft >= max;
+    prev.style.visibility = need ? 'visible' : 'hidden';
+    next.style.visibility = need ? 'visible' : 'hidden';
+}
+
+function clearPreviewTabDragMarks() {
+    const tabsEl = document.getElementById('previewTabs');
+    if (!tabsEl) return;
+    tabsEl.querySelectorAll('.preview-tab').forEach(function(el) {
+        el.classList.remove('dragging', 'drag-over-left', 'drag-over-right');
+    });
+}
+
+function movePreviewTab(fromPath, toPath, placeAfter) {
+    if (!fromPath || !toPath || fromPath === toPath) return;
+    const fromIdx = previewTabs.findIndex(function(t) { return t.path === fromPath; });
+    const toIdx = previewTabs.findIndex(function(t) { return t.path === toPath; });
+    if (fromIdx < 0 || toIdx < 0) return;
+    const item = previewTabs.splice(fromIdx, 1)[0];
+    let insertAt = toIdx;
+    if (fromIdx < toIdx) insertAt = toIdx - 1;
+    if (placeAfter) insertAt += 1;
+    if (insertAt < 0) insertAt = 0;
+    if (insertAt > previewTabs.length) insertAt = previewTabs.length;
+    previewTabs.splice(insertAt, 0, item);
+    renderPreviewTabBar();
+}
+
+function bindPreviewTabInteractions(tabsEl) {
+    tabsEl.querySelectorAll('.preview-tab').forEach(function(btn) {
+        btn.draggable = true;
+        btn.addEventListener('click', function(e) {
+            if (e.target.closest && e.target.closest('[data-close]')) return;
+            const p = btn.getAttribute('data-path');
+            if (p) switchPreviewTab(p);
+        });
+        btn.addEventListener('auxclick', function(e) {
+            if (e.button === 1) {
+                e.preventDefault();
+                closePreviewTab(btn.getAttribute('data-path'));
+            }
+        });
+        btn.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            showPtabCtxMenu(e.clientX, e.clientY, btn.getAttribute('data-path'));
+        });
+        btn.addEventListener('dragstart', function(e) {
+            if (e.target.closest && e.target.closest('[data-close]')) {
+                e.preventDefault();
+                return;
+            }
+            ptabDragPath = btn.getAttribute('data-path');
+            btn.classList.add('dragging');
+            try {
+                e.dataTransfer.setData('text/ptab-path', ptabDragPath || '');
+                e.dataTransfer.setData('text/plain', ptabDragPath || '');
+                e.dataTransfer.effectAllowed = 'move';
+            } catch (err) {}
+            hidePtabCtxMenu();
+        });
+        btn.addEventListener('dragend', function() {
+            ptabDragPath = null;
+            clearPreviewTabDragMarks();
+        });
+        btn.addEventListener('dragover', function(e) {
+            const src = ptabDragPath || (e.dataTransfer && e.dataTransfer.getData('text/ptab-path'));
+            if (!src) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const rect = btn.getBoundingClientRect();
+            const after = (e.clientX - rect.left) > rect.width / 2;
+            btn.classList.toggle('drag-over-left', !after);
+            btn.classList.toggle('drag-over-right', after);
+            tabsEl.querySelectorAll('.preview-tab').forEach(function(el) {
+                if (el !== btn) el.classList.remove('drag-over-left', 'drag-over-right');
+            });
+        });
+        btn.addEventListener('dragleave', function() {
+            btn.classList.remove('drag-over-left', 'drag-over-right');
+        });
+        btn.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const src = ptabDragPath || (e.dataTransfer && (
+                e.dataTransfer.getData('text/ptab-path') || e.dataTransfer.getData('text/plain')
+            ));
+            const dest = btn.getAttribute('data-path');
+            const rect = btn.getBoundingClientRect();
+            const after = (e.clientX - rect.left) > rect.width / 2;
+            clearPreviewTabDragMarks();
+            ptabDragPath = null;
+            if (src && dest) movePreviewTab(src, dest, after);
+        });
+    });
+    tabsEl.querySelectorAll('[data-close]').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            closePreviewTab(btn.getAttribute('data-close'));
+        });
+        btn.addEventListener('mousedown', function(e) {
+            // 避免拖动关闭按钮时启动标签拖拽
+            e.stopPropagation();
+        });
+    });
+}
+
+function renderPreviewTabBar() {
+    const wrap = document.getElementById('previewTabsWrap');
+    const tabsEl = document.getElementById('previewTabs');
+    if (!wrap || !tabsEl) return;
+    if (!previewTabs.length) {
+        wrap.hidden = true;
+        tabsEl.innerHTML = '';
+        hidePtabCtxMenu();
+        return;
+    }
+    wrap.hidden = false;
+    let html = '';
+    previewTabs.forEach(function(t) {
+        const active = t.path === previewActivePath;
+        html += '<button type="button" class="preview-tab' + (active ? ' active' : '') +
+            '" data-path="' + esc(t.path) + '" title="' + esc(t.path) + '">' +
+            '<span class="ptab-name">' + esc(t.title) + '</span>' +
+            '<span class="ptab-close" data-close="' + esc(t.path) + '" title="关闭">×</span>' +
+            '</button>';
+    });
+    tabsEl.innerHTML = html;
+    bindPreviewTabInteractions(tabsEl);
+    const activeBtn = tabsEl.querySelector('.preview-tab.active');
+    if (activeBtn) {
+        try { activeBtn.scrollIntoView({ inline: 'nearest', block: 'nearest' }); } catch (err) {}
+    }
+    setTimeout(updatePreviewTabNav, 30);
+}
+
+function openPreviewTab(path) {
+    if (!path) return;
+    let tab = previewTabs.find(function(t) { return t.path === path; });
+    if (!tab) {
+        if (previewTabs.length >= PREVIEW_TAB_MAX) {
+            const drop = previewTabs.find(function(t) { return t.path !== previewActivePath; }) || previewTabs[0];
+            previewTabs = previewTabs.filter(function(t) { return t.path !== drop.path; });
+            destroyPreviewPane(drop.path);
+        }
+        tab = { path: path, title: previewTabTitle(path) };
+        previewTabs.push(tab);
+    }
+    activatePreviewTab(path);
+}
+
+function switchPreviewTab(path) {
+    if (!path || previewActivePath === path) return;
+    if (!previewTabs.some(function(t) { return t.path === path; })) return;
+    activatePreviewTab(path, { syncSelection: true });
+}
+
+function closePreviewTab(path) {
+    if (!path) return;
+    const idx = previewTabs.findIndex(function(t) { return t.path === path; });
+    if (idx < 0) return;
+    previewTabs.splice(idx, 1);
+    destroyPreviewPane(path);
+    if (previewActivePath === path) {
+        const next = previewTabs[idx] || previewTabs[idx - 1] || null;
+        previewActivePath = '';
+        if (next) {
+            activatePreviewTab(next.path, { syncSelection: true });
+        } else {
+            renderPreviewTabBar();
+            showPreviewEmptyState();
+        }
+    } else {
+        renderPreviewTabBar();
+    }
+}
+
+function closeOtherPreviewTabs(path) {
+    if (!path) return;
+    const keep = previewTabs.find(function(t) { return t.path === path; });
+    if (!keep) return;
+    previewTabs.forEach(function(t) {
+        if (t.path !== path) destroyPreviewPane(t.path);
+    });
+    previewTabs = [keep];
+    // 若当前已是该 tab，activate 会早退，必须手动刷新标签栏
+    if (previewActivePath === path) {
+        renderPreviewTabBar();
+        setSingleSelection(path, 'file');
+        return;
+    }
+    activatePreviewTab(path, { syncSelection: true });
+}
+
+function closeAllPreviewTabs() {
+    previewTabs = [];
+    previewActivePath = '';
+    clearAllPreviewPanes();
+    renderPreviewTabBar();
+    showPreviewEmptyState();
+}
+
+function showPtabCtxMenu(x, y, path) {
+    hideCtxMenu();
+    const menu = document.getElementById('ptabCtxMenu');
+    if (!menu || !path) return;
+    ptabCtxPath = path;
+    const othersBtn = menu.querySelector('[data-ptab-act="close-others"]');
+    if (othersBtn) othersBtn.disabled = previewTabs.length <= 1;
+    menu.classList.add('show');
+    const w = menu.offsetWidth || 140;
+    const h = menu.offsetHeight || 100;
+    menu.style.left = Math.min(x, window.innerWidth - w - 8) + 'px';
+    menu.style.top = Math.min(y, window.innerHeight - h - 8) + 'px';
+    // 右键后部分浏览器会再冒泡一次 click，忽略以免立刻清掉路径
+    ptabCtxIgnoreClick = true;
+    setTimeout(function() { ptabCtxIgnoreClick = false; }, 0);
+}
+
+function hidePtabCtxMenu() {
+    const menu = document.getElementById('ptabCtxMenu');
+    if (menu) menu.classList.remove('show');
+    ptabCtxPath = '';
+}
+
+function ptabCtxAction(act, path) {
+    const target = path || ptabCtxPath;
+    hidePtabCtxMenu();
+    if (!target || !act) return;
+    if (act === 'close') closePreviewTab(target);
+    else if (act === 'close-others') closeOtherPreviewTabs(target);
+    else if (act === 'close-all') closeAllPreviewTabs();
+}
+
+function prunePreviewTabs(validPaths) {
+    const set = {};
+    (validPaths || []).forEach(function(p) { set[p] = true; });
+    const before = previewTabs.length;
+    const removed = [];
+    previewTabs = previewTabs.filter(function(t) {
+        if (set[t.path]) return true;
+        removed.push(t.path);
+        return false;
+    });
+    removed.forEach(function(p) { destroyPreviewPane(p); });
+    if (!previewTabs.length) {
+        if (before) {
+            previewActivePath = '';
+            renderPreviewTabBar();
+            showPreviewEmptyState();
+        }
+        return;
+    }
+    if (!previewTabs.some(function(t) { return t.path === previewActivePath; })) {
+        activatePreviewTab(previewTabs[previewTabs.length - 1].path);
+    } else if (before !== previewTabs.length) {
+        renderPreviewTabBar();
+    }
+}
+
+(function initPreviewTabNav() {
+    const wrap = document.getElementById('previewTabsWrap');
+    if (!wrap) return;
+    const tabs = document.getElementById('previewTabs');
+    const prev = wrap.querySelector('.ptab-nav-prev');
+    const next = wrap.querySelector('.ptab-nav-next');
+    if (prev) prev.addEventListener('click', function() {
+        if (tabs) tabs.scrollBy({ left: -140, behavior: 'smooth' });
+    });
+    if (next) next.addEventListener('click', function() {
+        if (tabs) tabs.scrollBy({ left: 140, behavior: 'smooth' });
+    });
+    if (tabs) tabs.addEventListener('scroll', updatePreviewTabNav, { passive: true });
+    window.addEventListener('resize', updatePreviewTabNav);
+})();
 
 function resetPreviewTransform() {
     previewZoomScale = 1;
@@ -1876,16 +2464,19 @@ function applyPreviewTransform() {
 function previewZoom(delta) {
     previewZoomScale = Math.min(3, Math.max(0.4, Math.round((previewZoomScale + delta) * 100) / 100));
     applyPreviewTransform();
+    rememberPaneView(previewActivePath);
 }
 
 function previewZoomReset() {
     previewZoomScale = 1;
     applyPreviewTransform();
+    rememberPaneView(previewActivePath);
 }
 
 function previewRotate(delta) {
     previewRotateDeg = (previewRotateDeg + delta) % 360;
     applyPreviewTransform();
+    rememberPaneView(previewActivePath);
 }
 
 function showPreviewToolbar(show) {
@@ -1894,17 +2485,12 @@ function showPreviewToolbar(show) {
     tb.classList.toggle('show', !!show);
 }
 
-function hidePreviewToolbar() {
-    showPreviewToolbar(false);
-    previewCurrentFile = '';
-}
-
 function downloadPreviewFile() {
-    if (!previewCurrentFile) {
+    if (!previewActivePath) {
         showToast('没有可下载的文件', 'error');
         return;
     }
-    downloadWorkspaceFile(previewCurrentFile);
+    downloadWorkspaceFile(previewActivePath);
 }
 
 function downloadWorkspaceFile(path) {
@@ -1939,58 +2525,69 @@ function downloadWorkspaceFile(path) {
 }
 
 function previewFile(name) {
-    const el = document.getElementById('previewContent');
-    const sub = document.getElementById('previewSub');
-    const vp = document.getElementById('previewViewport');
-    if (sub) sub.textContent = name || '选中文件后显示';
-    previewCurrentFile = name || '';
-    resetPreviewTransform();
-    if (vp) {
-        vp.classList.remove('pdf-mode');
-        vp.classList.remove('sheet-mode');
+    if (!name) {
+        showPreviewEmptyState();
+        return;
     }
-    el.classList.remove('pdf-mode');
-    el.classList.remove('sheet-mode');
+    previewActivePath = name || '';
+    const loadId = ++previewLoadSeq;
+    previewLoadIds[name] = loadId;
+    const pane = ensurePreviewPane(name);
+    if (!pane) return;
+    delete pane.dataset.loaded;
+    pane.dataset.toolbar = '0';
+    pane.classList.remove('pdf-mode');
+    pane.classList.remove('sheet-mode');
+    showPreviewPane(name);
+    resetPreviewTransform();
+    previewPaneView[name] = { zoom: 1, rotate: 0 };
     showPreviewToolbar(false);
-    el.innerHTML = '<div class="preview-loading"><div class="spinner"></div><div>正在加载预览...</div></div>';
+    pane.innerHTML = '<div class="preview-loading"><div class="spinner"></div><div>正在加载预览...</div></div>';
     api('preview?name=' + encodeURIComponent(name), 'GET', null, d => {
+        const container = getPreviewContainer(name, loadId);
+        if (!container) return;
         if (d.type === 'docx') {
-            showPreviewToolbar(true);
-            renderDocx(name, el);
+            applyPreviewChrome(name, loadId, { toolbar: true });
+            renderDocx(name, loadId);
         } else if (d.type === 'markdown') {
-            showPreviewToolbar(true);
-            renderMarkdown(name, el);
+            applyPreviewChrome(name, loadId, { toolbar: true });
+            renderMarkdown(name, loadId);
         } else if (d.type === 'spreadsheet') {
-            showPreviewToolbar(true);
-            if (vp) vp.classList.add('sheet-mode');
-            el.classList.add('sheet-mode');
-            renderSpreadsheet(name, el);
+            applyPreviewChrome(name, loadId, { toolbar: true, sheetMode: true });
+            renderSpreadsheet(name, loadId);
         } else if (d.type === 'image') {
-            showPreviewToolbar(true);
-            el.innerHTML = '<img class="preview-image" src="/api/raw?file=' +
+            applyPreviewChrome(name, loadId, { toolbar: true });
+            container.innerHTML = '<img class="preview-image" src="/api/raw?file=' +
                 encodeURIComponent(name) + '" alt="' + esc(d.name || name) + '">';
+            markPaneReady(container, true);
         } else if (d.type === 'pdf' && d.url) {
-            showPreviewToolbar(true);
-            if (vp) vp.classList.add('pdf-mode');
-            el.classList.add('pdf-mode');
-            el.innerHTML = '<iframe src="' + d.url + '" style="width:100%;height:100%;border:none;min-height:70vh"></iframe>';
+            applyPreviewChrome(name, loadId, { toolbar: true, pdfMode: true });
+            container.innerHTML = '<iframe src="' + d.url + '" style="width:100%;height:100%;border:none;min-height:70vh"></iframe>';
+            markPaneReady(container, true);
         } else if (d.type === 'unsupported') {
-            showPreviewToolbar(false);
-            renderUnsupported(el, d, name);
+            applyPreviewChrome(name, loadId, { toolbar: false });
+            renderUnsupported(container, d, name);
+            markPaneReady(container, false);
         } else if (d.is_html && d.html) {
-            showPreviewToolbar(true);
-            el.innerHTML = d.html;
+            applyPreviewChrome(name, loadId, { toolbar: true });
+            container.innerHTML = d.html;
+            markPaneReady(container, true);
         } else if (d.html != null) {
-            showPreviewToolbar(true);
-            el.innerHTML = '<pre style="white-space:pre-wrap;font-family:inherit;margin:0">' +
+            applyPreviewChrome(name, loadId, { toolbar: true });
+            container.innerHTML = '<pre style="white-space:pre-wrap;font-family:inherit;margin:0">' +
                 String(d.html).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre>';
+            markPaneReady(container, true);
         } else {
-            showPreviewToolbar(false);
-            renderUnsupported(el, d || {}, name);
+            applyPreviewChrome(name, loadId, { toolbar: false });
+            renderUnsupported(container, d || {}, name);
+            markPaneReady(container, false);
         }
     }, function(err) {
-        showPreviewToolbar(false);
-        el.innerHTML = '<div class="preview-empty">加载预览失败</div>';
+        const container = getPreviewContainer(name, loadId);
+        if (!container) return;
+        applyPreviewChrome(name, loadId, { toolbar: false });
+        container.innerHTML = '<div class="preview-empty">加载预览失败</div>';
+        markPaneReady(container, false);
     });
 }
 
@@ -2117,22 +2714,31 @@ function bindSheetTabNav(wrap) {
     return updateNav;
 }
 
-function renderSpreadsheet(name, container) {
+function renderSpreadsheet(name, loadId) {
     if (typeof XLSX === 'undefined') {
-        container.innerHTML = '<div class="preview-empty">表格预览库未加载</div>';
+        const container = getPreviewContainer(name, loadId);
+        if (container) {
+            container.innerHTML = '<div class="preview-empty">表格预览库未加载</div>';
+            markPaneReady(container, false);
+        }
         return;
     }
-    container.innerHTML = '<div class="preview-loading"><div class="spinner"></div><div>正在解析表格…</div></div>';
+    const boot = getPreviewContainer(name, loadId);
+    if (!boot) return;
+    boot.innerHTML = '<div class="preview-loading"><div class="spinner"></div><div>正在解析表格…</div></div>';
     fetch('/api/raw?file=' + encodeURIComponent(name))
         .then(function(r) {
             if (!r.ok) throw new Error('读取失败 HTTP ' + r.status);
             return r.arrayBuffer();
         })
         .then(function(buf) {
+            const container = getPreviewContainer(name, loadId);
+            if (!container) return;
             const wb = XLSX.read(new Uint8Array(buf), { type: 'array', cellDates: true });
             const sheets = wb.SheetNames || [];
             if (!sheets.length) {
                 container.innerHTML = '<div class="preview-empty">工作簿无工作表</div>';
+                markPaneReady(container, true);
                 return;
             }
             let tabs = '';
@@ -2167,12 +2773,16 @@ function renderSpreadsheet(name, container) {
             if (tabsEl && tabsEl.firstElementChild) {
                 try { tabsEl.firstElementChild.scrollIntoView({ inline: 'nearest', block: 'nearest' }); } catch (e) {}
             }
+            markPaneReady(container, true);
         })
         .catch(function(err) {
+            const container = getPreviewContainer(name, loadId);
+            if (!container) return;
             container.innerHTML = '<div class="preview-empty">表格预览失败: ' +
                 esc(err && err.message ? err.message : String(err)) +
                 '<div style="margin-top:0.75rem"><button type="button" class="btn btn-primary" data-open-sys="' +
                 esc(name) + '">用 Excel 打开</button></div></div>';
+            markPaneReady(container, false);
             const openBtn = container.querySelector('[data-open-sys]');
             if (openBtn) {
                 openBtn.addEventListener('click', function() {
@@ -2182,10 +2792,12 @@ function renderSpreadsheet(name, container) {
         });
 }
 
-function renderDocx(name, container) {
+function renderDocx(name, loadId) {
     fetch('/api/raw?file=' + encodeURIComponent(name))
         .then(r => r.arrayBuffer())
         .then(buf => {
+            const container = getPreviewContainer(name, loadId);
+            if (!container) return null;
             container.innerHTML = '';
             return docx.renderAsync(buf, container, null, {
                 className: 'docx-content',
@@ -2194,29 +2806,39 @@ function renderDocx(name, container) {
                 ignoreHeight: true,
                 breakPages: true,
                 experimental: true
+            }).then(function() {
+                markPaneReady(getPreviewContainer(name, loadId), true);
             });
         })
-        .then(() => { console.log('docx rendered ok'); })
         .catch(err => {
+            const container = getPreviewContainer(name, loadId);
+            if (!container) return;
             container.innerHTML = '<div class="preview-empty">Word 文档渲染失败: ' +
                 (err.message || err) + '</div>';
+            markPaneReady(container, false);
         });
 }
 
-function renderMarkdown(name, container) {
+function renderMarkdown(name, loadId) {
     fetch('/api/raw?file=' + encodeURIComponent(name))
         .then(r => r.text())
         .then(text => {
+            const container = getPreviewContainer(name, loadId);
+            if (!container) return;
             if (typeof marked !== 'undefined' && marked.parse) {
                 container.innerHTML = marked.parse(text);
             } else {
                 container.innerHTML = '<pre style="white-space:pre-wrap;font-family:inherit;margin:0">' +
                     text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre>';
             }
+            markPaneReady(container, true);
         })
         .catch(err => {
+            const container = getPreviewContainer(name, loadId);
+            if (!container) return;
             container.innerHTML = '<div class="preview-empty">Markdown 渲染失败: ' +
                 (err.message || err) + '</div>';
+            markPaneReady(container, false);
         });
 }
 
@@ -2340,6 +2962,7 @@ function doMovePaths(paths, dest) {
 }
 
 function showCtxMenu(x, y) {
+    hidePtabCtxMenu();
     const menu = document.getElementById('ctxMenu');
     const sel = primarySelection();
     const multi = selectedPaths().length > 1;
@@ -2431,7 +3054,8 @@ function ctxAction(act) {
 }
 
 document.getElementById('ctxMenu').addEventListener('click', function(e) {
-    const btn = e.target.closest('[data-act]');
+    const el = e.target && e.target.nodeType === 1 ? e.target : (e.target && e.target.parentElement);
+    const btn = el && el.closest ? el.closest('[data-act]') : null;
     if (btn) {
         e.preventDefault();
         e.stopPropagation();
@@ -2439,7 +3063,31 @@ document.getElementById('ctxMenu').addEventListener('click', function(e) {
     }
 });
 
-document.addEventListener('click', hideCtxMenu);
+document.getElementById('ptabCtxMenu').addEventListener('click', function(e) {
+    const el = e.target && e.target.nodeType === 1 ? e.target : (e.target && e.target.parentElement);
+    const btn = el && el.closest ? el.closest('[data-ptab-act]') : null;
+    if (!btn || btn.disabled) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const act = btn.getAttribute('data-ptab-act');
+    const path = ptabCtxPath;
+    ptabCtxAction(act, path);
+});
+
+// 点在菜单内不关闭，避免清掉 ptabCtxPath 导致关闭无效
+document.addEventListener('click', function(e) {
+    if (ptabCtxIgnoreClick) {
+        ptabCtxIgnoreClick = false;
+        return;
+    }
+    const ctx = document.getElementById('ctxMenu');
+    const ptab = document.getElementById('ptabCtxMenu');
+    const t = e.target;
+    if (ctx && ctx.classList.contains('show') && ctx.contains(t)) return;
+    if (ptab && ptab.classList.contains('show') && ptab.contains(t)) return;
+    hideCtxMenu();
+    hidePtabCtxMenu();
+});
 document.getElementById('nameModalInput').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') confirmNameModal();
 });
@@ -3022,7 +3670,10 @@ setInterval(function() {
 }, 15000);
 
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && isPreviewFullscreen()) {
+    if (e.key !== 'Escape') return;
+    hideCtxMenu();
+    hidePtabCtxMenu();
+    if (isPreviewFullscreen()) {
         // 有弹窗时优先关弹窗，不顺带退全屏
         const openModal = document.querySelector('.modal-overlay.show');
         if (openModal) return;
