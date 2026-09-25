@@ -49,13 +49,20 @@ class RequestHandler(BaseHTTPRequestHandler):
         elif path == "/api/pending_changes":
             self._send_json(self.server.vm.get_pending_changes())
         elif path == "/api/history":
-            self._send_json({"history": self.server.vm.get_history()})
+            qs = parse_qs(parsed.query)
+            scope = qs.get("path", [""])[0]
+            hist = self.server.vm.get_history(scope if scope else None)
+            self._send_json({
+                "history": hist,
+                "path": (scope or "").replace("\\", "/").strip("/"),
+            })
         elif path == "/api/workspace":
             self._send_json(self.server.vm.get_workspace_info())
         elif path == "/api/preview":
             qs = parse_qs(parsed.query)
             name = qs.get("name", [""])[0]
-            self._send_json(self.server.vm.preview_file(name))
+            rev = qs.get("rev", [None])[0]
+            self._send_json(self.server.vm.preview_file(name, rev))
         elif path == "/api/pdf":
             qs = parse_qs(parsed.query)
             name = qs.get("file", [""])[0]
@@ -79,12 +86,13 @@ class RequestHandler(BaseHTTPRequestHandler):
         elif path == "/api/raw":
             qs = parse_qs(parsed.query)
             name = qs.get("file", [""])[0]
+            rev = qs.get("rev", [None])[0]
             if not name:
                 self._send_json({"error": "缺少 file 参数"}, 400)
                 return
-            fpath = self.server.vm._resolve(name)
-            if not fpath or not os.path.isfile(fpath):
-                self._send_json({"error": "文件不存在"}, 404)
+            fpath, err = self.server.vm.resolve_file_for_read(name, rev)
+            if not fpath:
+                self._send_json({"error": err or "文件不存在"}, 404)
                 return
             ext = os.path.splitext(name)[1].lower()
             raw_mime = {
@@ -98,6 +106,10 @@ class RequestHandler(BaseHTTPRequestHandler):
                 ".webp": "image/webp",
                 ".bmp": "image/bmp",
                 ".svg": "image/svg+xml",
+                ".pdf": "application/pdf",
+                ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                ".xls": "application/vnd.ms-excel",
+                ".csv": "text/csv; charset=utf-8",
             }
             self._send_file(fpath, raw_mime.get(ext, "application/octet-stream"))
         elif path == "/api/download":
@@ -213,6 +225,9 @@ class RequestHandler(BaseHTTPRequestHandler):
             self._send_json({"ok": ok, "msg": msg})
         elif path == "/api/rollback":
             ok, msg = self.server.vm.rollback(data.get("version"))
+            self._send_json({"ok": ok, "msg": msg})
+        elif path == "/api/restore_path":
+            ok, msg = self.server.vm.restore_path(data.get("version"), data.get("path", ""))
             self._send_json({"ok": ok, "msg": msg})
         elif path == "/api/edit":
             ok, msg = self.server.vm.edit_file(data.get("name", ""))

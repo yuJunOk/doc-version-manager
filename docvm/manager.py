@@ -301,53 +301,79 @@ class VersionManager:
     def delete_file(self, filename):
         return self.delete_item(filename)
 
-    def preview_file(self, filename):
-        if not self.workspace_dir:
-            return {"type": "unsupported", "error": "工作区未就绪", "name": "", "ext": "", "size": ""}
-        fpath = self._resolve(filename)
-        if fpath is None or not os.path.exists(fpath) or not os.path.isfile(fpath):
-            return {"type": "unsupported", "error": "文件不存在", "name": os.path.basename(filename or ""), "ext": "", "size": ""}
+    def preview_file(self, filename, rev=None):
+        """预览工作区文件，或指定修订中的历史版本（rev 非空时）。"""
+        result_rev = None
+        if rev is not None and str(rev).strip() != "":
+            try:
+                result_rev = int(rev)
+            except (TypeError, ValueError):
+                return {
+                    "type": "unsupported",
+                    "error": "无效修订号",
+                    "name": os.path.basename((filename or "").replace("\\", "/")),
+                    "ext": "",
+                    "size": "",
+                }
+            fpath, err = self.resolve_file_for_read(filename, result_rev)
+            if not fpath:
+                return {
+                    "type": "unsupported",
+                    "error": err or "文件不存在",
+                    "name": os.path.basename((filename or "").replace("\\", "/")),
+                    "ext": "",
+                    "size": "",
+                    "rev": result_rev,
+                }
+        else:
+            if not self.workspace_dir:
+                return {"type": "unsupported", "error": "工作区未就绪", "name": "", "ext": "", "size": ""}
+            fpath = self._resolve(filename)
+            if fpath is None or not os.path.exists(fpath) or not os.path.isfile(fpath):
+                return {
+                    "type": "unsupported",
+                    "error": "文件不存在",
+                    "name": os.path.basename(filename or ""),
+                    "ext": "",
+                    "size": "",
+                }
         ext = os.path.splitext(filename)[1].lower()
         base = os.path.basename(filename.replace("\\", "/"))
         try:
             size = format_file_size(os.path.getsize(fpath))
         except OSError:
             size = ""
+        meta = {"name": base, "ext": ext, "size": size}
+        if result_rev is not None:
+            meta["rev"] = result_rev
         if ext == ".docx":
-            return {"type": "docx", "name": base, "ext": ext, "size": size}
+            return {"type": "docx", **meta}
         if ext == ".doc":
             return {
                 "type": "unsupported",
-                "name": base,
-                "ext": ext,
-                "size": size,
+                **meta,
                 "hint": "旧版 .doc 暂不支持在线预览，请转换为 .docx，或下载后用 Word 打开。",
             }
         if ext == ".md":
-            return {"type": "markdown", "name": base, "ext": ext, "size": size}
+            return {"type": "markdown", **meta}
         if ext in (".csv", ".xlsx", ".xls"):
-            # 前端 SheetJS 解析，支持多工作表 Tab
-            return {"type": "spreadsheet", "name": base, "ext": ext, "size": size}
+            return {"type": "spreadsheet", **meta}
         if ext in (".txt", ".log"):
             try:
                 with open(fpath, "r", encoding="utf-8") as f:
-                    return {"type": "text", "html": f.read(), "is_html": False, "name": base, "ext": ext, "size": size}
+                    return {"type": "text", "html": f.read(), "is_html": False, **meta}
             except Exception as e:
                 return {
                     "type": "unsupported",
-                    "name": base,
-                    "ext": ext,
-                    "size": size,
+                    **meta,
                     "hint": f"读取失败: {e}",
                 }
-        # 图片可浏览器预览
         if ext in (".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"):
-            return {"type": "image", "name": base, "ext": ext, "size": size}
+            return {"type": "image", **meta}
         return {
             "type": "unsupported",
-            "name": base,
+            **meta,
             "ext": ext or "（无扩展名）",
-            "size": size,
             "hint": "该类型暂不支持在线预览，可下载到本地查看。",
         }
 
@@ -410,11 +436,18 @@ class VersionManager:
         self._sync_repo_views()
         return ok, msg
 
-    def get_history(self):
-        """类似 svn log。"""
+    def get_history(self, path=None):
+        """类似 svn log [PATH]。"""
         if not self.repo:
             return []
-        return self.repo.log()
+        if path is None or str(path).strip() in ("", ".", "/"):
+            return self.repo.log()
+        norm = self._norm_rel(path)
+        if norm is None:
+            return []
+        if norm == "":
+            return self.repo.log()
+        return self.repo.filter_log_by_path(norm)
 
     def rollback(self, version_num):
         """类似 svn update -r N（覆盖工作副本）。"""
@@ -422,6 +455,18 @@ class VersionManager:
             return False, "工作区未就绪"
         ok, msg = self.repo.checkout(int(version_num))
         self._sync_repo_views()
+        return ok, msg
+
+    def restore_path(self, version_num, rel_path):
+        """类似 svn update -r N PATH：只恢复单个文件。"""
+        if not self.repo:
+            return False, "工作区未就绪"
+        norm = self._norm_rel(rel_path)
+        if norm is None or norm == "":
+            return False, "路径非法"
+        ok, msg = self.repo.restore_path(int(version_num), norm)
+        if ok:
+            self._sync_repo_views()
         return ok, msg
 
     def resolve_rev_file(self, version_num, rel_path):
@@ -432,6 +477,19 @@ class VersionManager:
         if norm is None or norm == "":
             return None, None, "路径非法"
         return self.repo.resolve_file_at(int(version_num), norm)
+
+    def resolve_file_for_read(self, filename, rev=None):
+        """解析工作区或指定修订中的文件绝对路径。"""
+        if rev is not None and str(rev).strip() != "":
+            try:
+                ver = int(rev)
+            except (TypeError, ValueError):
+                return None, "无效修订号"
+            fpath, _digest, err = self.resolve_rev_file(ver, filename)
+            if not fpath:
+                return None, err or "文件不存在"
+            return fpath, ""
+        return self.resolve_workspace_file(filename)
 
     def diff_file(self, rel_path, from_rev, to_rev):
         """类似 svn diff：对比两修订（或工作副本）中同一文件。"""

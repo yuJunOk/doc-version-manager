@@ -673,10 +673,21 @@ header .btn-refresh .ico-svg { width: 0.85rem; height: 0.85rem; opacity: 0.95; }
     padding: 0; overflow: hidden;
 }
 .modal.modal-history .hist-head {
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
     padding: 0.9rem 1.2rem; border-bottom: 1px solid var(--line); flex-shrink: 0;
 }
 .modal.modal-history .hist-head h2 { margin: 0; }
+.modal.modal-history .hist-head-main { min-width: 0; flex: 1; }
+.modal.modal-history .hist-scope {
+    display: none; align-items: center; gap: 0.45rem; flex-wrap: wrap;
+    margin-top: 0.35rem; font-size: var(--fs-sm); color: var(--muted);
+}
+.modal.modal-history .hist-scope.show { display: flex; }
+.modal.modal-history .hist-scope .scope-path {
+    font-weight: 650; color: var(--accent);
+    max-width: min(36rem, 70vw); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.modal.modal-history .hist-scope .btn { padding: 0.15rem 0.55rem; font-size: 0.72rem; }
 .modal.modal-history .hist-body {
     flex: 1; display: flex; min-height: 0; overflow: hidden;
 }
@@ -733,6 +744,13 @@ header .btn-refresh .ico-svg { width: 0.85rem; height: 0.85rem; opacity: 0.95; }
 .chip-a { background: #e8f1ff; color: #0066cc; }
 .chip-m { background: #fff4e0; color: var(--warn); }
 .chip-d { background: #fdecea; color: var(--danger); }
+.hist-row .path-status {
+    display: inline-block; margin-left: 0.35rem; padding: 0.05rem 0.35rem;
+    border-radius: 0.25rem; font-size: 0.68rem; font-weight: 650;
+}
+.hist-row .path-status.a { background: #e8f1ff; color: #0066cc; }
+.hist-row .path-status.m { background: #fff4e0; color: var(--warn); }
+.hist-row .path-status.d { background: #fdecea; color: var(--danger); }
 .hist-row .ops { flex-shrink: 0; }
 .hist-row .ops .btn { pointer-events: auto; }
 
@@ -772,21 +790,37 @@ header .btn-refresh .ico-svg { width: 0.85rem; height: 0.85rem; opacity: 0.95; }
 .hist-file-group .group-title.d { color: var(--danger); }
 .hist-file-list {
     border: 1px solid var(--line); border-radius: 0.4rem;
-    background: var(--surface); max-height: 28vh; overflow-y: auto;
+    background: var(--surface); max-height: 36vh; overflow-y: auto;
 }
 .hist-file-list .chg-line {
-    padding: 0.35rem 0.75rem; font-family: Consolas, "Courier New", monospace;
-    font-size: var(--fs-sm); border-bottom: 1px solid #f3f5f7;
-    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.55rem 0.75rem; font-size: var(--fs-sm);
+    border-bottom: 1px solid #f3f5f7;
+    display: flex; flex-direction: column; align-items: stretch; gap: 0.4rem;
 }
 .hist-file-list .chg-line:last-child { border-bottom: none; }
 .hist-file-list .chg-path {
-    flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-family: Consolas, "Courier New", monospace;
 }
 .hist-file-list .chg-acts {
-    display: flex; gap: 0.25rem; flex-shrink: 0;
+    display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center;
 }
 .hist-file-list .chg-acts .btn { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+.hist-file-card {
+    border: 1px solid var(--line); border-radius: 0.45rem;
+    background: var(--surface); padding: 0.85rem 1rem; margin: 0.35rem 0 0.75rem;
+}
+.hist-file-card .fname {
+    font-size: 0.9rem; font-weight: 650; color: var(--text);
+    word-break: break-all; margin-bottom: 0.65rem;
+}
+.hist-file-card .acts {
+    display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center;
+}
+.hist-file-card .acts .btn { font-size: 0.78rem; }
+.hist-act-hint {
+    margin-top: 0.65rem; font-size: 0.72rem; color: var(--muted); line-height: 1.45;
+}
 
 /* 内容对比弹窗 */
 .modal.modal-diff {
@@ -1136,7 +1170,14 @@ header .btn-refresh .ico-svg { width: 0.85rem; height: 0.85rem; opacity: 0.95; }
 <div class="modal-overlay" id="historyModal">
     <div class="modal modal-history">
         <div class="hist-head">
-            <h2>修订历史</h2>
+            <div class="hist-head-main">
+                <h2 id="historyTitle">修订历史</h2>
+                <div class="hist-scope" id="historyScopeBar">
+                    <span>范围</span>
+                    <span class="scope-path" id="historyScopeLabel" title=""></span>
+                    <button type="button" class="btn btn-default" onclick="clearHistoryScope()">查看全部修订</button>
+                </div>
+            </div>
             <button class="btn btn-default" onclick="closeModal('historyModal')">关闭</button>
         </div>
         <div class="hist-body">
@@ -1188,6 +1229,7 @@ header .btn-refresh .ico-svg { width: 0.85rem; height: 0.85rem; opacity: 0.95; }
 
 <div class="ctx-menu" id="ctxMenu">
     <button data-act="detail">详情</button>
+    <button data-act="history">查看历史</button>
     <div class="sep" data-act-sep="0"></div>
     <button data-act="mkdir">新建子文件夹</button>
     <button data-act="upload">上传到此处</button>
@@ -1200,6 +1242,8 @@ header .btn-refresh .ico-svg { width: 0.85rem; height: 0.85rem; opacity: 0.95; }
 </div>
 
 <div class="ctx-menu" id="ptabCtxMenu">
+    <button data-ptab-act="history">查看历史</button>
+    <div class="sep"></div>
     <button data-ptab-act="close">关闭</button>
     <button data-ptab-act="close-others">关闭其他</button>
     <button data-ptab-act="close-all">关闭全部</button>
@@ -1225,6 +1269,9 @@ let pendingDirtyCount = 0;
 let lastPending = null;
 let historyCache = [];
 let selectedHistoryVer = null;
+/** 路径历史范围：空字符串=全部修订 */
+let historyScopePath = '';
+let historyScopeIsDir = false;
 
 function esc(s) {
     return String(s == null ? '' : s)
@@ -1970,8 +2017,52 @@ let previewLoadIds = {};
 let previewPaneView = {}; // path -> {zoom, rotate}
 
 function previewTabTitle(path) {
-    const parts = String(path || '').replace(/\\/g, '/').split('/').filter(Boolean);
-    return parts.length ? parts[parts.length - 1] : (path || '未命名');
+    const info = parsePreviewKey(path);
+    const parts = String(info.path || '').replace(/\\/g, '/').split('/').filter(Boolean);
+    const base = parts.length ? parts[parts.length - 1] : (info.path || '未命名');
+    if (info.rev != null) return base + ' · r' + info.rev;
+    return base;
+}
+
+function parsePreviewKey(key) {
+    const s = String(key || '');
+    const m = s.match(/^@r(\d+):(.*)$/);
+    if (m) return { rev: Number(m[1]), path: m[2], key: s };
+    return { rev: null, path: s, key: s };
+}
+
+function makePreviewKey(path, rev) {
+    if (rev != null && rev !== '') return '@r' + rev + ':' + path;
+    return path;
+}
+
+function rawFileUrl(path, rev) {
+    let u = '/api/raw?file=' + encodeURIComponent(path);
+    if (rev != null && rev !== '') u += '&rev=' + encodeURIComponent(rev);
+    return u;
+}
+
+function previewApiPath(path, rev) {
+    let u = 'preview?name=' + encodeURIComponent(path);
+    if (rev != null && rev !== '') u += '&rev=' + encodeURIComponent(rev);
+    return u;
+}
+
+function openPreviewAtRev(path, rev) {
+    if (!path || !rev) return;
+    const key = makePreviewKey(path, rev);
+    let tab = previewTabs.find(function(t) { return t.path === key; });
+    if (!tab) {
+        if (previewTabs.length >= PREVIEW_TAB_MAX) {
+            const drop = previewTabs.find(function(t) { return t.path !== previewActivePath; }) || previewTabs[0];
+            previewTabs = previewTabs.filter(function(t) { return t.path !== drop.path; });
+            destroyPreviewPane(drop.path);
+        }
+        tab = { path: key, title: previewTabTitle(key) };
+        previewTabs.push(tab);
+    }
+    closeModal('historyModal');
+    activatePreviewTab(key, { forceReload: true });
 }
 
 function invalidatePreviewLoad(path) {
@@ -2398,7 +2489,13 @@ function hidePtabCtxMenu() {
 function ptabCtxAction(act, path) {
     const target = path || ptabCtxPath;
     hidePtabCtxMenu();
-    if (!target || !act) return;
+    if (!act) return;
+    if (act === 'history') {
+        const info = parsePreviewKey(target);
+        if (info.path) showPathHistory(info.path, false);
+        return;
+    }
+    if (!target) return;
     if (act === 'close') closePreviewTab(target);
     else if (act === 'close-others') closeOtherPreviewTabs(target);
     else if (act === 'close-all') closeAllPreviewTabs();
@@ -2410,6 +2507,8 @@ function prunePreviewTabs(validPaths) {
     const before = previewTabs.length;
     const removed = [];
     previewTabs = previewTabs.filter(function(t) {
+        // 历史预览标签不受工作区文件列表裁剪
+        if (String(t.path).indexOf('@r') === 0) return true;
         if (set[t.path]) return true;
         removed.push(t.path);
         return false;
@@ -2490,7 +2589,12 @@ function downloadPreviewFile() {
         showToast('没有可下载的文件', 'error');
         return;
     }
-    downloadWorkspaceFile(previewActivePath);
+    const info = parsePreviewKey(previewActivePath);
+    if (info.rev != null) {
+        downloadRevFile(info.path, info.rev, 'at');
+        return;
+    }
+    downloadWorkspaceFile(info.path);
 }
 
 function downloadWorkspaceFile(path) {
@@ -2529,6 +2633,9 @@ function previewFile(name) {
         showPreviewEmptyState();
         return;
     }
+    const info = parsePreviewKey(name);
+    const filePath = info.path;
+    const rev = info.rev;
     previewActivePath = name || '';
     const loadId = ++previewLoadSeq;
     previewLoadIds[name] = loadId;
@@ -2536,14 +2643,17 @@ function previewFile(name) {
     if (!pane) return;
     delete pane.dataset.loaded;
     pane.dataset.toolbar = '0';
+    pane.dataset.filePath = filePath || '';
+    pane.dataset.rev = rev != null ? String(rev) : '';
     pane.classList.remove('pdf-mode');
     pane.classList.remove('sheet-mode');
     showPreviewPane(name);
     resetPreviewTransform();
     previewPaneView[name] = { zoom: 1, rotate: 0 };
     showPreviewToolbar(false);
-    pane.innerHTML = '<div class="preview-loading"><div class="spinner"></div><div>正在加载预览...</div></div>';
-    api('preview?name=' + encodeURIComponent(name), 'GET', null, d => {
+    pane.innerHTML = '<div class="preview-loading"><div class="spinner"></div><div>正在加载预览' +
+        (rev != null ? '（r' + rev + '）' : '') + '...</div></div>';
+    api(previewApiPath(filePath, rev), 'GET', null, d => {
         const container = getPreviewContainer(name, loadId);
         if (!container) return;
         if (d.type === 'docx') {
@@ -2557,8 +2667,8 @@ function previewFile(name) {
             renderSpreadsheet(name, loadId);
         } else if (d.type === 'image') {
             applyPreviewChrome(name, loadId, { toolbar: true });
-            container.innerHTML = '<img class="preview-image" src="/api/raw?file=' +
-                encodeURIComponent(name) + '" alt="' + esc(d.name || name) + '">';
+            container.innerHTML = '<img class="preview-image" src="' + rawFileUrl(filePath, rev) +
+                '" alt="' + esc(d.name || filePath) + '">';
             markPaneReady(container, true);
         } else if (d.type === 'pdf' && d.url) {
             applyPreviewChrome(name, loadId, { toolbar: true, pdfMode: true });
@@ -2566,7 +2676,7 @@ function previewFile(name) {
             markPaneReady(container, true);
         } else if (d.type === 'unsupported') {
             applyPreviewChrome(name, loadId, { toolbar: false });
-            renderUnsupported(container, d, name);
+            renderUnsupported(container, d, filePath);
             markPaneReady(container, false);
         } else if (d.is_html && d.html) {
             applyPreviewChrome(name, loadId, { toolbar: true });
@@ -2579,7 +2689,7 @@ function previewFile(name) {
             markPaneReady(container, true);
         } else {
             applyPreviewChrome(name, loadId, { toolbar: false });
-            renderUnsupported(container, d || {}, name);
+            renderUnsupported(container, d || {}, filePath);
             markPaneReady(container, false);
         }
     }, function(err) {
@@ -2714,6 +2824,15 @@ function bindSheetTabNav(wrap) {
     return updateNav;
 }
 
+function paneFileInfo(name, loadId) {
+    const container = getPreviewContainer(name, loadId);
+    if (!container) return null;
+    const info = parsePreviewKey(name);
+    const filePath = container.dataset.filePath || info.path;
+    const rev = container.dataset.rev ? Number(container.dataset.rev) : info.rev;
+    return { container: container, filePath: filePath, rev: rev };
+}
+
 function renderSpreadsheet(name, loadId) {
     if (typeof XLSX === 'undefined') {
         const container = getPreviewContainer(name, loadId);
@@ -2723,10 +2842,10 @@ function renderSpreadsheet(name, loadId) {
         }
         return;
     }
-    const boot = getPreviewContainer(name, loadId);
-    if (!boot) return;
-    boot.innerHTML = '<div class="preview-loading"><div class="spinner"></div><div>正在解析表格…</div></div>';
-    fetch('/api/raw?file=' + encodeURIComponent(name))
+    const info = paneFileInfo(name, loadId);
+    if (!info) return;
+    info.container.innerHTML = '<div class="preview-loading"><div class="spinner"></div><div>正在解析表格…</div></div>';
+    fetch(rawFileUrl(info.filePath, info.rev))
         .then(function(r) {
             if (!r.ok) throw new Error('读取失败 HTTP ' + r.status);
             return r.arrayBuffer();
@@ -2778,22 +2897,25 @@ function renderSpreadsheet(name, loadId) {
         .catch(function(err) {
             const container = getPreviewContainer(name, loadId);
             if (!container) return;
+            const filePath = parsePreviewKey(name).path;
             container.innerHTML = '<div class="preview-empty">表格预览失败: ' +
                 esc(err && err.message ? err.message : String(err)) +
                 '<div style="margin-top:0.75rem"><button type="button" class="btn btn-primary" data-open-sys="' +
-                esc(name) + '">用 Excel 打开</button></div></div>';
+                esc(filePath) + '">用 Excel 打开</button></div></div>';
             markPaneReady(container, false);
             const openBtn = container.querySelector('[data-open-sys]');
             if (openBtn) {
                 openBtn.addEventListener('click', function() {
-                    openWithSystemApp(name);
+                    openWithSystemApp(filePath);
                 });
             }
         });
 }
 
 function renderDocx(name, loadId) {
-    fetch('/api/raw?file=' + encodeURIComponent(name))
+    const info = paneFileInfo(name, loadId);
+    if (!info) return;
+    fetch(rawFileUrl(info.filePath, info.rev))
         .then(r => r.arrayBuffer())
         .then(buf => {
             const container = getPreviewContainer(name, loadId);
@@ -2820,7 +2942,9 @@ function renderDocx(name, loadId) {
 }
 
 function renderMarkdown(name, loadId) {
-    fetch('/api/raw?file=' + encodeURIComponent(name))
+    const info = paneFileInfo(name, loadId);
+    if (!info) return;
+    fetch(rawFileUrl(info.filePath, info.rev))
         .then(r => r.text())
         .then(text => {
             const container = getPreviewContainer(name, loadId);
@@ -2973,6 +3097,7 @@ function showCtxMenu(x, y) {
         if (el) el.style.display = on ? 'block' : 'none';
     };
     show('detail', !multi);
+    show('history', !multi && !isRoot);
     show('mkdir', isDir && !multi);
     show('upload', isDir && !multi);
     show('reveal', true);
@@ -3040,6 +3165,9 @@ function ctxAction(act) {
     hideCtxMenu();
     const sel = primarySelection();
     if (act === 'detail') showItemDetail();
+    else if (act === 'history') {
+        if (sel.path) showPathHistory(sel.path, sel.type === 'dir');
+    }
     else if (act === 'mkdir') showMkdirDialog();
     else if (act === 'upload') {
         uploadTargetDir = (sel.type === 'dir' && sel.path != null) ? sel.path : '';
@@ -3215,6 +3343,47 @@ function changeChipsHtml(changes) {
     return html;
 }
 
+/**
+ * 统一文件历史操作：预览 → 对比 → 下载 → 恢复
+ * contentRev：可读内容所在修订（删除项指向删除前一版）
+ */
+function fileRevActionsHtml(path, rev, kind, opts) {
+    opts = opts || {};
+    const compact = !!opts.compact;
+    const ep = esc(path);
+    const prev = findPrevRev(rev);
+    const contentRev = (kind === 'deleted') ? prev : rev;
+    const canRead = contentRev != null && contentRev > 0;
+    const canDiff = kind === 'modified' || kind === 'deleted' || kind === 'added';
+
+    function btn(act, label, cls, r, title, actKind) {
+        if (r == null || r < 1) return '';
+        return '<button type="button" class="btn btn-sm ' + cls + '" data-act="' + act +
+            '" data-path="' + ep + '" data-rev="' + r + '" data-kind="' + (actKind || 'at') + '"' +
+            (title ? ' title="' + esc(title) + '"' : '') + '>' + label + '</button>';
+    }
+
+    let html = '';
+    if (canRead) {
+        html += btn('preview', compact ? '预览' : '预览此版', 'btn-default', contentRev,
+            '在预览区打开 r' + contentRev + ' 的内容', 'at');
+    }
+    if (canDiff) {
+        const diffLabel = compact ? '对比' : '对比上一版';
+        html += btn('diff', diffLabel, 'btn-default', rev,
+            '与上一修订对比；可在对比窗下载两端', kind);
+    }
+    if (canRead) {
+        html += btn('dl', compact ? '下载' : '下载此版', 'btn-default', contentRev,
+            '下载 r' + contentRev + ' 的文件', 'at');
+    }
+    if (canRead) {
+        html += btn('restore', compact ? '恢复' : '恢复到工作区', 'btn-default', contentRev,
+            '仅覆盖工作区中的此文件，不会整库回滚', 'at');
+    }
+    return html || '<span style="color:var(--muted);font-size:0.75rem">无可用操作</span>';
+}
+
 function renderGroupedChanges(changes, revNum) {
     if (!changes) return '<div class="change-empty">无变更明细</div>';
     const groups = [
@@ -3225,7 +3394,6 @@ function renderGroupedChanges(changes, revNum) {
     let html = '';
     let any = false;
     const rev = Number(revNum);
-    const prev = findPrevRev(rev);
     groups.forEach(g => {
         const list = changes[g.key] || [];
         if (!list.length) return;
@@ -3234,35 +3402,10 @@ function renderGroupedChanges(changes, revNum) {
         html += '<div class="group-title ' + g.cls + '">' + g.label + '（' + list.length + '）</div>';
         html += '<div class="hist-file-list">';
         list.forEach(p => {
-            const ep = esc(p);
-            let acts = '';
-            if (g.key === 'modified') {
-                // 修改：主按钮「修改前」，次按钮「修改后」
-                if (prev != null) {
-                    acts += '<button type="button" class="btn btn-sm btn-primary" data-act="dl" data-path="' + ep +
-                        '" data-rev="' + prev + '" data-kind="at" title="下载修改前（修订 r' + prev + '）">修改前</button>';
-                }
-                acts += '<button type="button" class="btn btn-sm btn-default" data-act="dl" data-path="' + ep +
-                    '" data-rev="' + rev + '" data-kind="at" title="下载修改后（修订 r' + rev + '）">修改后</button>';
-                acts += '<button type="button" class="btn btn-sm btn-default" data-act="diff" data-path="' + ep +
-                    '" data-rev="' + rev + '" data-kind="modified">对比</button>';
-            } else if (g.key === 'deleted') {
-                if (prev != null) {
-                    acts += '<button type="button" class="btn btn-sm btn-primary" data-act="dl" data-path="' + ep +
-                        '" data-rev="' + prev + '" data-kind="at" title="下载删除前的内容（r' + prev + '）">下载</button>';
-                }
-                acts += '<button type="button" class="btn btn-sm btn-default" data-act="diff" data-path="' + ep +
-                    '" data-rev="' + rev + '" data-kind="deleted">对比</button>';
-            } else {
-                // added
-                acts += '<button type="button" class="btn btn-sm btn-default" data-act="dl" data-path="' + ep +
-                    '" data-rev="' + rev + '" data-kind="at" title="下载本修订新增的文件（r' + rev + '）">下载</button>';
-                acts += '<button type="button" class="btn btn-sm btn-default" data-act="diff" data-path="' + ep +
-                    '" data-rev="' + rev + '" data-kind="added">对比</button>';
-            }
             html += '<div class="chg-line chg-' + g.cls + '">' +
-                '<span class="chg-path" title="' + ep + '">' + g.mark + '  ' + ep + '</span>' +
-                '<span class="chg-acts">' + acts + '</span></div>';
+                '<span class="chg-path" title="' + esc(p) + '">' + g.mark + '  ' + esc(p) + '</span>' +
+                '<span class="chg-acts">' + fileRevActionsHtml(p, rev, g.key, { compact: true }) + '</span>' +
+                '</div>';
         });
         html += '</div></div>';
     });
@@ -3282,6 +3425,8 @@ document.addEventListener('click', function(e) {
     if (!path || !Number.isFinite(rev) || rev < 0) return;
     if (act === 'dl') downloadRevFile(path, rev, kind);
     else if (act === 'diff') diffRevFile(path, rev, kind);
+    else if (act === 'preview') openPreviewAtRev(path, rev);
+    else if (act === 'restore') doRestorePath(path, rev);
 });
 
 function downloadRevFile(path, rev, changeKind) {
@@ -3332,9 +3477,11 @@ function downloadRevFile(path, rev, changeKind) {
 }
 
 function findPrevRev(rev) {
+    const v = historyCache.find(function(x) { return Number(x.version) === Number(rev); });
+    if (v && v.prev_revision != null) return Number(v.prev_revision);
     const earlier = historyCache
-        .map(v => v.version)
-        .filter(v => v < rev);
+        .map(function(x) { return x.version; })
+        .filter(function(n) { return n < rev; });
     return earlier.length ? Math.max.apply(null, earlier) : null;
 }
 
@@ -3459,6 +3606,46 @@ function renderUnifiedDiff(text) {
 function showSaveDialog() { showCommitModal(); }
 function showHistory() { showHistoryModal(); }
 
+function updateHistoryScopeBar() {
+    const bar = document.getElementById('historyScopeBar');
+    const label = document.getElementById('historyScopeLabel');
+    const title = document.getElementById('historyTitle');
+    if (!bar || !label || !title) return;
+    if (historyScopePath) {
+        bar.classList.add('show');
+        const shown = '/' + historyScopePath + (historyScopeIsDir ? '/' : '');
+        label.textContent = shown;
+        label.title = shown;
+        title.textContent = historyScopeIsDir ? '目录历史' : '文件历史';
+    } else {
+        bar.classList.remove('show');
+        label.textContent = '';
+        label.title = '';
+        title.textContent = '修订历史';
+    }
+}
+
+function clearHistoryScope() {
+    historyScopePath = '';
+    historyScopeIsDir = false;
+    selectedHistoryVer = null;
+    updateHistoryScopeBar();
+    loadHistoryPanel();
+}
+
+function showPathHistory(path, isDir) {
+    if (!path) {
+        showHistoryModal();
+        return;
+    }
+    historyScopePath = String(path).replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+    historyScopeIsDir = !!isDir;
+    selectedHistoryVer = null;
+    document.getElementById('historyModal').classList.add('show');
+    updateHistoryScopeBar();
+    loadHistoryPanel();
+}
+
 function showCommitModal() {
     if (document.getElementById('toolbarCommitBtn').disabled) {
         showToast('没有需要提交的变更', 'error');
@@ -3472,7 +3659,10 @@ function showCommitModal() {
 }
 
 function showHistoryModal() {
+    historyScopePath = '';
+    historyScopeIsDir = false;
     selectedHistoryVer = null;
+    updateHistoryScopeBar();
     document.getElementById('historyModal').classList.add('show');
     loadHistoryPanel();
 }
@@ -3528,6 +3718,13 @@ function doSaveVersion() {
     }, () => { hideLoading(); showToast('提交失败', 'error'); });
 }
 
+function pathStatusLabel(status) {
+    if (status === 'added') return { cls: 'a', text: '新增' };
+    if (status === 'modified') return { cls: 'm', text: '修改' };
+    if (status === 'deleted') return { cls: 'd', text: '删除' };
+    return null;
+}
+
 function loadHistoryPanel() {
     const list = document.getElementById('historyList');
     const detail = document.getElementById('historyDetail');
@@ -3535,29 +3732,35 @@ function loadHistoryPanel() {
     list.innerHTML = '<div class="change-empty">加载修订历史…</div>';
     detail.innerHTML = '<div class="hist-detail-empty">加载中…</div>';
     countEl.textContent = '';
-    api('history', 'GET', null, data => {
+    updateHistoryScopeBar();
+    let url = 'history';
+    if (historyScopePath) url += '?path=' + encodeURIComponent(historyScopePath);
+    api(url, 'GET', null, data => {
         historyCache = data.history || [];
         if (!historyCache.length) {
-            list.innerHTML = '<div class="change-empty">暂无修订历史</div>';
-            detail.innerHTML = '<div class="hist-detail-empty">提交后将在这里显示修订详情</div>';
-            countEl.textContent = '0 条修订';
+            list.innerHTML = '<div class="change-empty">' +
+                (historyScopePath ? '该路径尚无相关修订' : '暂无修订历史') + '</div>';
+            detail.innerHTML = '<div class="hist-detail-empty">' +
+                (historyScopePath ? '此路径在历史提交中没有出现过变更' : '提交后将在这里显示修订详情') +
+                '</div>';
+            countEl.textContent = historyScopePath ? '范围内 0 条' : '0 条修订';
             return;
         }
-        countEl.textContent = '共 ' + historyCache.length + ' 条修订';
+        countEl.textContent = (historyScopePath ? '范围内 ' : '共 ') + historyCache.length + ' 条修订';
         let html = '';
         historyCache.forEach(v => {
             const note = (v.note || '').trim() || '（无说明）';
+            const st = pathStatusLabel(v.path_status);
             html += '<div class="hist-row" data-ver="' + v.version + '" onclick="selectHistoryRev(' + v.version + ')">' +
-                '<div class="rev">r' + v.version + '</div>' +
+                '<div class="rev">r' + v.version +
+                    (st ? '<span class="path-status ' + st.cls + '">' + st.text + '</span>' : '') +
+                '</div>' +
                 '<div class="meta">' +
                     '<div class="note" title="' + esc(note) + '">' + esc(note) + '</div>' +
                     '<div class="time">' + esc(v.time || '') + '</div>' +
                     '<div class="chips">' + changeChipsHtml(v.changes) + '</div>' +
-                '</div>' +
-                '<div class="ops">' +
-                    '<button type="button" class="btn btn-sm btn-danger" onclick="event.stopPropagation();doRollback(' + v.version + ')">回滚</button>' +
-                '</div>' +
-            '</div>';
+                '</div>';
+            html += '</div>';
         });
         list.innerHTML = html;
         const pick = selectedHistoryVer && historyCache.some(v => v.version === selectedHistoryVer)
@@ -3587,27 +3790,50 @@ function selectHistoryRev(ver) {
     const nM = (changes.modified || []).length;
     const nD = (changes.deleted || []).length;
     const total = nA + nM + nD;
+    const st = pathStatusLabel(v.path_status);
+    const fileScope = !!(historyScopePath && !historyScopeIsDir);
+
     let html = '<div class="hist-detail-body">';
     html += '<div class="hist-detail-title">' +
         '<span class="rev-big">r' + v.version + '</span>' +
+        (st ? '<span class="path-status ' + st.cls + '">' + st.text + '</span>' : '') +
         '<span class="when">' + esc(v.time || '') + '</span>' +
         '</div>';
     html += '<div class="hist-detail-note' + (note ? '' : ' empty') + '">' +
         esc(note || '本次提交未填写说明') + '</div>';
-    html += '<div class="hist-section-label">变更概览 <span class="chips">' +
-        changeChipsHtml(changes) + '</span>' +
-        '<span style="font-weight:400;color:var(--muted)">共 ' + total + ' 项</span></div>';
-    html += renderGroupedChanges(changes, v.version);
-    html += '<div class="hist-detail-actions">' +
-        '<button type="button" class="btn btn-danger" onclick="doRollback(' + v.version + ')">回滚到此修订</button>' +
-        '<span style="font-size:var(--fs-sm);color:var(--muted);align-self:center">将覆盖工作区中未提交的修改</span>' +
-        '</div>';
+
+    if (fileScope) {
+        const kind = v.path_status || (nM ? 'modified' : (nA ? 'added' : 'deleted'));
+        html += '<div class="hist-section-label">本文件操作</div>';
+        html += '<div class="hist-file-card">';
+        html += '<div class="fname" title="' + esc(historyScopePath) + '">' + esc(historyScopePath) + '</div>';
+        html += '<div class="acts">' + fileRevActionsHtml(historyScopePath, v.version, kind, { compact: false }) + '</div>';
+        html += '<div class="hist-act-hint">预览 / 下载看历史内容；对比看差异（对比窗可下载两端）；恢复只改工作区里这一份文件。</div>';
+        html += '</div>';
+    } else {
+        html += '<div class="hist-section-label">变更文件 <span class="chips">' +
+            changeChipsHtml(changes) + '</span>' +
+            '<span style="font-weight:400;color:var(--muted)">共 ' + total + ' 项</span></div>';
+        html += renderGroupedChanges(changes, v.version);
+        html += '<div class="hist-act-hint">每个文件统一为：预览 → 对比 → 下载 → 恢复（恢复仅覆盖该文件）。</div>';
+    }
+
+    if (!historyScopePath) {
+        html += '<div class="hist-detail-actions">' +
+            '<button type="button" class="btn btn-danger" onclick="doRollback(' + v.version + ')">整库回滚到此修订</button>' +
+            '<span style="font-size:var(--fs-sm);color:var(--muted);align-self:center">覆盖整个工作区，与上方「恢复」单文件不同</span>' +
+            '</div>';
+    } else {
+        html += '<div class="hist-detail-actions">' +
+            '<span style="font-size:var(--fs-sm);color:var(--muted)">当前为路径历史，不提供整库回滚。需要时可点「查看全部修订」。</span>' +
+            '</div>';
+    }
     html += '</div>';
     detail.innerHTML = html;
 }
 
 function doRollback(ver) {
-    if (confirm('确定将工作区恢复到修订 r' + ver + ' 吗？\n未提交修改将被覆盖。')) {
+    if (confirm('确定将【整个工作区】恢复到修订 r' + ver + ' 吗？\n未提交修改将被全部覆盖。\n（若只想恢复单个文件，请用文件上的「恢复」）')) {
         showLoading('正在恢复到 r' + ver + '…');
         api('rollback', 'POST', {version: ver}, d => {
             hideLoading();
@@ -3618,6 +3844,22 @@ function doRollback(ver) {
             } else showToast(d.msg, 'error');
         }, () => { hideLoading(); showToast('恢复失败', 'error'); });
     }
+}
+
+function doRestorePath(path, rev) {
+    if (!path || !rev) return;
+    if (!confirm('确定把「' + path + '」恢复为 r' + rev + ' 的内容吗？\n只改这一个文件，其它文件不动。')) {
+        return;
+    }
+    showLoading('正在恢复文件…');
+    api('restore_path', 'POST', {version: rev, path: path}, d => {
+        hideLoading();
+        if (d.ok) {
+            showToast(d.msg, 'success');
+            refresh();
+            openPreviewTab(path);
+        } else showToast(d.msg, 'error');
+    }, () => { hideLoading(); showToast('恢复失败', 'error'); });
 }
 
 // 中间分割条拖拽调整左右面板宽度

@@ -609,8 +609,86 @@ class DocvmRepository:
                 except (OSError, ValueError, TypeError):
                     pass
             item.setdefault("change_summary", "—")
+            if ver is not None:
+                item["prev_revision"] = self.prev_revision(int(ver))
             result.append(item)
         return result
+
+    @staticmethod
+    def path_in_scope(file_path: str, scope: str) -> bool:
+        """判断 file_path 是否属于 scope（精确文件或目录前缀）。"""
+        scope = (scope or "").replace("\\", "/").strip("/")
+        file_path = (file_path or "").replace("\\", "/").strip("/")
+        if not scope:
+            return True
+        if file_path == scope:
+            return True
+        return file_path.startswith(scope + "/")
+
+    def filter_log_by_path(self, scope_path: str) -> list:
+        """
+        类似 svn log PATH：只保留变更列表中命中该路径（或子路径）的修订。
+        返回条目中的 changes 已裁剪为范围内的路径，并附 path_status（精确文件时）。
+        """
+        scope = (scope_path or "").replace("\\", "/").strip("/")
+        if not scope:
+            return self.log()
+        result = []
+        for item in self.log():
+            changes = item.get("changes") or {}
+            matched = {"added": [], "modified": [], "deleted": []}
+            exact_status = None
+            for key in ("added", "modified", "deleted"):
+                for p in changes.get(key) or []:
+                    if not self.path_in_scope(p, scope):
+                        continue
+                    matched[key].append(p)
+                    if p == scope and exact_status is None:
+                        exact_status = key
+            if not (matched["added"] or matched["modified"] or matched["deleted"]):
+                continue
+            new_item = dict(item)
+            new_item["changes"] = matched
+            new_item["change_summary"] = self.format_summary(matched)
+            new_item["scope_path"] = scope
+            if exact_status:
+                new_item["path_status"] = exact_status
+            result.append(new_item)
+        return result
+
+    def restore_path(self, version_num: int, rel_path: str) -> tuple:
+        """
+        将工作副本中的单个文件恢复为指定修订中的内容（类似 svn update -r N PATH）。
+        不触碰其他文件。若该修订的树中无此文件，返回错误。
+        """
+        rel = (rel_path or "").replace("\\", "/").strip("/")
+        if not rel or ".." in rel.split("/"):
+            return False, "路径非法"
+        version_num = int(version_num)
+        tree = self.get_tree_at(version_num)
+        if rel not in tree:
+            return False, f"修订 r{version_num} 中不存在文件: {rel}"
+        digest = tree[rel]
+        if not self.store.exists(digest):
+            # 尝试旧目录
+            entry = next((v for v in self.history if v.get("version") == version_num), None)
+            if entry and entry.get("folder"):
+                legacy = os.path.join(
+                    self.legacy_versions_dir, entry["folder"], rel.replace("/", os.sep)
+                )
+                if os.path.isfile(legacy):
+                    dst = os.path.join(self.workspace_dir, rel.replace("/", os.sep))
+                    ensure_dir(os.path.dirname(dst))
+                    shutil.copy2(legacy, dst)
+                    return True, f"已将 {rel} 恢复为 r{version_num} 的内容"
+            return False, f"修订 r{version_num} 的文件内容缺失: {rel}"
+        dst = os.path.join(self.workspace_dir, rel.replace("/", os.sep))
+        ensure_dir(os.path.dirname(dst))
+        try:
+            self.store.checkout(digest, dst)
+            return True, f"已将 {rel} 恢复为 r{version_num} 的内容"
+        except Exception as e:
+            return False, f"恢复失败: {e}"
 
     def checkout(self, version_num: int) -> tuple:
         """
