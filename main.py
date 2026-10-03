@@ -24,6 +24,8 @@ from docvm.manager import VersionManager
 from docvm.paths import IS_WINDOWS
 from docvm.server import create_server
 
+# 对外监听所有网卡；本机打开浏览器仍用回环地址
+BIND_HOST = "0.0.0.0"
 APP_HOST = "127.0.0.1"
 APP_PORT = 404
 
@@ -81,7 +83,7 @@ def main() -> None:
     vm = VersionManager()
 
     try:
-        server = create_server(vm, host=APP_HOST, port=APP_PORT)
+        server = create_server(vm, host=BIND_HOST, port=APP_PORT)
     except OSError:
         # 启动竞态：探测后又被占上了
         if _is_instance_running():
@@ -91,7 +93,7 @@ def main() -> None:
         _port_busy_error()
         sys.exit(1)
 
-    print(f"DocVM 已启动（托盘运行）: {url}")
+    print(f"DocVM 已启动（托盘运行）: {url}  （监听 {BIND_HOST}:{APP_PORT}）")
 
     http_thread = threading.Thread(target=server.serve_forever, daemon=True)
     http_thread.start()

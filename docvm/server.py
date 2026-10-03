@@ -305,7 +305,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             self._send_json({"error": f"下载失败: {e}"}, 500)
 
 
-def create_server(vm, host: str = "127.0.0.1", port: int = 404) -> HTTPServer:
+def create_server(vm, host: str = "0.0.0.0", port: int = 404) -> HTTPServer:
     server = HTTPServer((host, port), RequestHandler)
     server.vm = vm
     return server
